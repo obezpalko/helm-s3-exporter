@@ -1,0 +1,67 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }}
+  $ helm get all {{ .Release.Name }}
+
+📊 Metrics endpoint:
+  {{ if contains "NodePort" .Values.service.type -}}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "helm-s3-exporter.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo "Metrics available at http://$NODE_IP:$NODE_PORT{{ .Values.metrics.path }}"
+  {{- else if contains "LoadBalancer" .Values.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "helm-s3-exporter.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo "Metrics available at http://$SERVICE_IP:{{ .Values.service.port }}{{ .Values.metrics.path }}"
+  {{- else if contains "ClusterIP" .Values.service.type }}
+  echo "Metrics endpoint: http://{{ include "helm-s3-exporter.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}{{ .Values.metrics.path }}"
+  
+  To access metrics locally:
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "helm-s3-exporter.fullname" . }} {{ .Values.metrics.port }}:{{ .Values.service.port }}
+  {{- end }}
+
+{{- if .Values.html.enabled }}
+
+🌐 HTML Dashboard:
+  {{- if contains "ClusterIP" .Values.service.type }}
+  To access the HTML dashboard locally:
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "helm-s3-exporter.fullname" . }} {{ .Values.metrics.port }}:{{ .Values.service.port }}
+  Then visit: http://localhost:{{ .Values.metrics.port }}{{ .Values.html.path }}
+  {{- end }}
+{{- end }}
+
+⚙️  Configuration:
+  S3 Bucket: {{ .Values.s3.bucket }}
+  S3 Region: {{ .Values.s3.region }}
+  Scan Interval: {{ .Values.scan.interval }}
+  {{- if .Values.auth.useIAMRole }}
+  Authentication: IAM Role (IRSA)
+  {{- if .Values.serviceAccount.roleArn }}
+  IAM Role ARN: {{ .Values.serviceAccount.roleArn }}
+  {{- end }}
+  {{- else }}
+  Authentication: Static Credentials
+  ⚠️  WARNING: Using static credentials is not recommended for production
+  {{- end }}
+
+{{- if .Values.serviceMonitor.enabled }}
+
+🔍 ServiceMonitor:
+  A ServiceMonitor has been created for Prometheus Operator integration.
+  Ensure your Prometheus instance is configured to discover ServiceMonitors in this namespace.
+{{- end }}
+
+📚 Documentation:
+  Visit https://github.com/obezpalko/helm-s3-exporter for more information.
+
+{{- if not .Values.s3.bucket }}
+
+⚠️  WARNING: S3 bucket is not configured!
+  The exporter will not work until you set the S3 bucket name.
+  Update your values:
+    helm upgrade {{ .Release.Name }} {{ .Chart.Name }} --set s3.bucket=YOUR_BUCKET_NAME
+{{- end }}
+

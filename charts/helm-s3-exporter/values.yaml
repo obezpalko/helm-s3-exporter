@@ -1,0 +1,159 @@
+# Default values for helm-s3-exporter
+
+replicaCount: 1
+
+image:
+  repository: docker.io/helm-s3-exporter
+  pullPolicy: IfNotPresent
+  tag: ""  # Overrides the image tag whose default is the chart appVersion
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# S3 Configuration
+s3:
+  # S3 bucket name containing the Helm repository
+  bucket: ""
+  # AWS region where the bucket is located
+  region: "us-east-1"
+  # Path to the index.yaml file in the bucket
+  key: "index.yaml"
+
+# Authentication Configuration
+auth:
+  # Use IAM role for authentication (recommended for EKS with IRSA)
+  useIAMRole: true
+  # Existing secret name containing AWS credentials
+  # The secret should contain keys: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+  existingSecret: ""
+  # If not using existing secret and useIAMRole is false, specify credentials here
+  # WARNING: This is insecure for production use
+  credentials:
+    accessKeyId: ""
+    secretAccessKey: ""
+
+# Service Account configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # IAM role ARN for IRSA (IAM Roles for Service Accounts)
+  # When set, automatically adds the eks.amazonaws.com/role-arn annotation
+  roleArn: ""
+  # Example: arn:aws:iam::123456789012:role/helm-s3-exporter-role
+  
+  # Additional annotations to add to the service account
+  # The roleArn will be added automatically if specified
+  annotations: {}
+  
+  # The name of the service account to use
+  name: ""
+
+# Scanning Configuration
+scan:
+  # How often to scan the S3 bucket (e.g., "5m", "10m", "1h")
+  interval: "5m"
+  # Timeout for S3 operations (e.g., "30s", "1m")
+  timeout: "30s"
+
+# Metrics Configuration
+metrics:
+  # Port for the metrics server
+  port: 9571
+  # Path for the metrics endpoint
+  path: "/metrics"
+
+# Optional HTML Dashboard
+html:
+  # Enable HTML dashboard generation
+  enabled: false
+  # Path for the HTML endpoint
+  path: "/charts"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 9571
+  annotations: {}
+
+# ServiceMonitor configuration for Prometheus Operator
+serviceMonitor:
+  # Enable ServiceMonitor creation
+  enabled: false
+  # Additional labels for ServiceMonitor
+  additionalLabels: {}
+    # prometheus: kube-prometheus
+  # Scrape interval
+  interval: 30s
+  # Scrape timeout
+  scrapeTimeout: 10s
+  # Namespace where ServiceMonitor will be created (defaults to release namespace)
+  namespace: ""
+
+# Pod annotations
+podAnnotations: {}
+  # prometheus.io/scrape: "true"
+  # prometheus.io/port: "9571"
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  fsGroup: 65532
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 65532
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Liveness probe configuration
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Readiness probe configuration
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Priority class name
+priorityClassName: ""
+
+# Extra environment variables
+extraEnv: []
+  # - name: LOG_LEVEL
+  #   value: "debug"
+

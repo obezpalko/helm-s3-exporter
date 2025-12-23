@@ -1,0 +1,18 @@
+# Simple example for quick setup with IRSA
+# Just set your S3 bucket and IAM role ARN
+
+s3:
+  bucket: "my-helm-charts-bucket"
+  region: "us-west-2"
+
+# Specify your IAM role ARN - the annotation will be added automatically
+serviceAccount:
+  roleArn: "arn:aws:iam::123456789012:role/helm-s3-exporter-role"
+
+# Optional: Enable features
+serviceMonitor:
+  enabled: false
+
+html:
+  enabled: false
+

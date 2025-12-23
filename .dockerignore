@@ -1,0 +1,8 @@
+.git
+.gitignore
+README.md
+HELM-S3-EXPORTER.md
+charts/
+*.md
+.github
+

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: helm-s3-exporter
+description: A Prometheus exporter for Helm charts stored in AWS S3 buckets
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - prometheus
+  - exporter
+  - helm
+  - s3
+  - monitoring
+home: https://github.com/obezpalko/helm-s3-exporter
+sources:
+  - https://github.com/obezpalko/helm-s3-exporter
+maintainers:
+  - name: obezpalko
+    url: https://github.com/obezpalko
+
