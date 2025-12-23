@@ -3,7 +3,7 @@
 replicaCount: 1
 
 image:
-  repository: docker.io/helm-s3-exporter
+  repository: ghcr.io/obezpalko/helm-s3-exporter
   pullPolicy: IfNotPresent
   tag: ""  # Overrides the image tag whose default is the chart appVersion
 

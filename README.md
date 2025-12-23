@@ -292,8 +292,13 @@ make test
 # Build image
 make docker-build
 
-# Push image
-make docker-push DOCKER_REGISTRY=your-registry
+# Push image (use GitHub Container Registry)
+make docker-push DOCKER_REGISTRY=ghcr.io/obezpalko
+```
+
+The official images are published to GitHub Container Registry:
+```bash
+docker pull ghcr.io/obezpalko/helm-s3-exporter:latest
 ```
 
 ### Project Structure

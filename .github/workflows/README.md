@@ -60,9 +60,9 @@ This directory contains CI/CD workflows for the Helm S3 Exporter project.
   - Attach to GitHub release
 
 **Required Secrets**:
-- `DOCKER_USERNAME` - Docker Hub username
-- `DOCKER_PASSWORD` - Docker Hub password/token
-- `GITHUB_TOKEN` - Automatically provided
+- `GITHUB_TOKEN` - Automatically provided (used for GHCR and releases)
+
+**Note**: Docker images are published to GitHub Container Registry (ghcr.io). No additional secrets required!
 
 ## Usage
 
