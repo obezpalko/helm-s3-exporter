@@ -4,7 +4,8 @@
 *.dll
 *.so
 *.dylib
-exporter
+/exporter
+/bin/exporter
 
 # Test binary
 *.test
