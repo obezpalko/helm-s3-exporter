@@ -72,13 +72,17 @@ func main() {
 	// Add health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		if _, err := w.Write([]byte("OK")); err != nil {
+			log.Printf("Error writing health response: %v", err)
+		}
 	})
 
 	// Add readiness check endpoint
 	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Ready"))
+		if _, err := w.Write([]byte("Ready")); err != nil {
+			log.Printf("Error writing readiness response: %v", err)
+		}
 	})
 
 	if cfg.EnableHTML && htmlGenerator != nil {
@@ -87,8 +91,12 @@ func main() {
 	}
 
 	server := &http.Server{
-		Addr:    ":" + cfg.MetricsPort,
-		Handler: mux,
+		Addr:              ":" + cfg.MetricsPort,
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	// Start HTTP server
