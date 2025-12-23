@@ -1,7 +1,14 @@
 # Helm S3 Exporter
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go)](https://go.dev/)
+<p align="center">
+  <img src="icon.svg" alt="Helm S3 Exporter Logo" width="150" height="150">
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
+  <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go" alt="Go Version"></a>
+  <a href="https://github.com/obezpalko/helm-s3-exporter/actions"><img src="https://github.com/obezpalko/helm-s3-exporter/workflows/Build%20and%20Test/badge.svg" alt="Build Status"></a>
+</p>
 
 A Prometheus exporter for Helm charts stored in AWS S3 buckets. This exporter helps administrators analyze and monitor the state of Helm chart repositories by collecting data from S3 and exposing comprehensive metrics.
 

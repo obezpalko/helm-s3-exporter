@@ -27,6 +27,7 @@ go.work
 Thumbs.db
 
 # Build artifacts
+bin/
 dist/
 build/
 

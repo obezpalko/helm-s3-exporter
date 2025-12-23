@@ -10,6 +10,7 @@ DOCKER_TAG=$(VERSION)
 # Build the application
 build:
 	@echo "Building $(APP_NAME)..."
+	@mkdir -p bin
 	go build -ldflags="-w -s" -o bin/exporter ./cmd/exporter
 
 # Run the application locally
