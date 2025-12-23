@@ -18,6 +18,15 @@ jobs:
       with:
         go-version: '1.21'
     
+    - name: Check formatting
+      run: |
+        if [ -n "$(gofmt -l .)" ]; then
+          echo "The following files are not properly formatted:"
+          gofmt -l .
+          echo "Please run 'make fmt' or 'gofmt -w .' to fix"
+          exit 1
+        fi
+    
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v3
       with:
@@ -57,7 +66,7 @@ jobs:
       run: make build
     
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: exporter
         path: bin/exporter

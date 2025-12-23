@@ -21,12 +21,12 @@ type Config struct {
 	ScanTimeout  time.Duration
 
 	// Server Configuration
-	MetricsPort  string
-	MetricsPath  string
+	MetricsPort string
+	MetricsPath string
 
 	// Optional Features
-	EnableHTML   bool
-	HTMLPath     string
+	EnableHTML bool
+	HTMLPath   string
 }
 
 // LoadFromEnv loads configuration from environment variables
@@ -73,4 +73,3 @@ func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
 	}
 	return defaultValue
 }
-

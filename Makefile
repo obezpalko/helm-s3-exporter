@@ -59,6 +59,7 @@ deps:
 # Format code
 fmt:
 	@echo "Formatting code..."
+	gofmt -w .
 	go fmt ./...
 
 # Run linter
