@@ -31,11 +31,12 @@ func main() {
 	for _, repo := range cfg.Repositories {
 		log.Printf("    - %s: %s (interval: %v)", repo.Name, repo.URL, repo.ScanInterval)
 		if repo.Auth != nil {
-			if repo.Auth.Basic != nil {
+			switch {
+			case repo.Auth.Basic != nil:
 				log.Printf("      Auth: Basic (username: %s)", repo.Auth.Basic.Username)
-			} else if repo.Auth.BearerToken != "" {
+			case repo.Auth.BearerToken != "":
 				log.Printf("      Auth: Bearer Token")
-			} else if len(repo.Auth.Headers) > 0 {
+			case len(repo.Auth.Headers) > 0:
 				log.Printf("      Auth: Custom Headers (%d)", len(repo.Auth.Headers))
 			}
 		}
@@ -156,7 +157,7 @@ func main() {
 		select {
 		case client := <-scrapeChan:
 			// Scrape single repository
-			performSingleRepoScrape(ctx, client, metricsCollector, htmlGenerator, allClients)
+			performSingleRepoScrape(ctx, client, metricsCollector, htmlGenerator)
 		case sig := <-sigChan:
 			log.Printf("Received signal %v, shutting down...", sig)
 			shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -241,7 +242,7 @@ func performScrape(ctx context.Context, clients []*fetcher.Client, metricsCollec
 }
 
 // performSingleRepoScrape scrapes a single repository and updates aggregate metrics
-func performSingleRepoScrape(ctx context.Context, client *fetcher.Client, metricsCollector *metrics.Metrics, htmlGenerator *web.HTMLGenerator, allClients []*fetcher.Client) {
+func performSingleRepoScrape(ctx context.Context, client *fetcher.Client, metricsCollector *metrics.Metrics, htmlGenerator *web.HTMLGenerator) {
 	repoName := client.RepositoryName()
 	log.Printf("Scraping repository: %s", repoName)
 	startTime := time.Now()
@@ -288,37 +289,40 @@ func mergeAnalysis(a1, a2 *analyzer.ChartAnalysis) *analyzer.ChartAnalysis {
 	}
 
 	// Merge date statistics
-	if !a1.OldestChartDate.IsZero() && !a2.OldestChartDate.IsZero() {
+	switch {
+	case !a1.OldestChartDate.IsZero() && !a2.OldestChartDate.IsZero():
 		if a1.OldestChartDate.Before(a2.OldestChartDate) {
 			merged.OldestChartDate = a1.OldestChartDate
 		} else {
 			merged.OldestChartDate = a2.OldestChartDate
 		}
-	} else if !a1.OldestChartDate.IsZero() {
+	case !a1.OldestChartDate.IsZero():
 		merged.OldestChartDate = a1.OldestChartDate
-	} else {
+	default:
 		merged.OldestChartDate = a2.OldestChartDate
 	}
 
-	if !a1.NewestChartDate.IsZero() && !a2.NewestChartDate.IsZero() {
+	switch {
+	case !a1.NewestChartDate.IsZero() && !a2.NewestChartDate.IsZero():
 		if a1.NewestChartDate.After(a2.NewestChartDate) {
 			merged.NewestChartDate = a1.NewestChartDate
 		} else {
 			merged.NewestChartDate = a2.NewestChartDate
 		}
-	} else if !a1.NewestChartDate.IsZero() {
+	case !a1.NewestChartDate.IsZero():
 		merged.NewestChartDate = a1.NewestChartDate
-	} else {
+	default:
 		merged.NewestChartDate = a2.NewestChartDate
 	}
 
 	// For median, we'll just use the median of the two medians (approximation)
-	if !a1.MedianChartDate.IsZero() && !a2.MedianChartDate.IsZero() {
+	switch {
+	case !a1.MedianChartDate.IsZero() && !a2.MedianChartDate.IsZero():
 		avg := (a1.MedianChartDate.Unix() + a2.MedianChartDate.Unix()) / 2
 		merged.MedianChartDate = time.Unix(avg, 0)
-	} else if !a1.MedianChartDate.IsZero() {
+	case !a1.MedianChartDate.IsZero():
 		merged.MedianChartDate = a1.MedianChartDate
-	} else {
+	default:
 		merged.MedianChartDate = a2.MedianChartDate
 	}
 

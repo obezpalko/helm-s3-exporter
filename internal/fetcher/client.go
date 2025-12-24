@@ -35,9 +35,7 @@ func (c *Client) GetIndexYAML(ctx context.Context) ([]byte, error) {
 
 	// Add authentication if configured
 	if c.repo.Auth != nil {
-		if err := c.addAuthentication(req); err != nil {
-			return nil, fmt.Errorf("failed to add authentication: %w", err)
-		}
+		c.addAuthentication(req)
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -59,7 +57,7 @@ func (c *Client) GetIndexYAML(ctx context.Context) ([]byte, error) {
 }
 
 // addAuthentication adds authentication headers to the request
-func (c *Client) addAuthentication(req *http.Request) error {
+func (c *Client) addAuthentication(req *http.Request) {
 	if c.repo.Auth.Basic != nil {
 		req.SetBasicAuth(c.repo.Auth.Basic.Username, c.repo.Auth.Basic.Password)
 	}
@@ -71,8 +69,6 @@ func (c *Client) addAuthentication(req *http.Request) error {
 	for key, value := range c.repo.Auth.Headers {
 		req.Header.Set(key, value)
 	}
-
-	return nil
 }
 
 // RepositoryName returns the name of the repository
