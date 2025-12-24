@@ -1,0 +1,18 @@
+# Simple configuration with a single repository
+
+repositories:
+  - name: production
+    url: https://charts.example.com/index.yaml
+
+# Scan configuration
+scanInterval: 5m
+scanTimeout: 30s
+
+# Server configuration
+metricsPort: "9571"
+metricsPath: /metrics
+
+# Optional HTML dashboard
+enableHTML: true
+htmlPath: /charts
+

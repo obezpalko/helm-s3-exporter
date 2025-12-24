@@ -34,18 +34,14 @@ To learn more about the release, try:
 {{- end }}
 
 ⚙️  Configuration:
-  S3 Bucket: {{ .Values.s3.bucket }}
-  S3 Region: {{ .Values.s3.region }}
+  {{- if .Values.config.inline.enabled }}
+  Repository URL: {{ .Values.config.inline.url }}
+  {{- else if .Values.config.existingSecret.enabled }}
+  Config Source: Secret {{ .Values.config.existingSecret.name }}
+  {{- else if .Values.config.existingConfigMap.enabled }}
+  Config Source: ConfigMap {{ .Values.config.existingConfigMap.name }}
+  {{- end }}
   Scan Interval: {{ .Values.scan.interval }}
-  {{- if .Values.auth.useIAMRole }}
-  Authentication: IAM Role (IRSA)
-  {{- if .Values.serviceAccount.roleArn }}
-  IAM Role ARN: {{ .Values.serviceAccount.roleArn }}
-  {{- end }}
-  {{- else }}
-  Authentication: Static Credentials
-  ⚠️  WARNING: Using static credentials is not recommended for production
-  {{- end }}
 
 {{- if .Values.serviceMonitor.enabled }}
 
@@ -57,11 +53,12 @@ To learn more about the release, try:
 📚 Documentation:
   Visit https://github.com/obezpalko/helm-s3-exporter for more information.
 
-{{- if not .Values.s3.bucket }}
+{{- if and (not .Values.config.inline.enabled) (not .Values.config.existingSecret.enabled) (not .Values.config.existingConfigMap.enabled) }}
 
-⚠️  WARNING: S3 bucket is not configured!
-  The exporter will not work until you set the S3 bucket name.
-  Update your values:
-    helm upgrade {{ .Release.Name }} {{ .Chart.Name }} --set s3.bucket=YOUR_BUCKET_NAME
+⚠️  WARNING: No configuration source is enabled!
+  Enable one of the following:
+    - config.inline.enabled with config.inline.url
+    - config.existingSecret.enabled with config.existingSecret.name
+    - config.existingConfigMap.enabled with config.existingConfigMap.name
 {{- end }}
 

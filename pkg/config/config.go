@@ -1,44 +1,128 @@
 package config
 
 import (
+	"fmt"
 	"os"
-	"strconv"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 // Config holds the application configuration
 type Config struct {
-	// S3 Configuration
-	S3Bucket     string
-	S3Region     string
-	S3Key        string
-	UseIAMRole   bool
-	AWSAccessKey string
-	AWSSecretKey string
+	// Repository Configuration
+	Repositories []Repository `yaml:"repositories"`
 
 	// Scan Configuration
-	ScanInterval time.Duration
-	ScanTimeout  time.Duration
+	ScanInterval time.Duration `yaml:"scanInterval"`
+	ScanTimeout  time.Duration `yaml:"scanTimeout"`
 
 	// Server Configuration
-	MetricsPort string
-	MetricsPath string
+	MetricsPort string `yaml:"metricsPort"`
+	MetricsPath string `yaml:"metricsPath"`
 
 	// Optional Features
-	EnableHTML bool
-	HTMLPath   string
+	EnableHTML bool   `yaml:"enableHTML"`
+	HTMLPath   string `yaml:"htmlPath"`
 }
 
-// LoadFromEnv loads configuration from environment variables
-func LoadFromEnv() *Config {
+// Repository defines a Helm repository source
+type Repository struct {
+	// Name is a friendly identifier for this repository
+	Name string `yaml:"name"`
+
+	// URL is the HTTP/HTTPS URL to the index.yaml file
+	URL string `yaml:"url"`
+
+	// ScanInterval overrides the global scan interval for this repository
+	// If not set, uses the global scanInterval
+	ScanInterval time.Duration `yaml:"scanInterval,omitempty"`
+
+	// Authentication configuration
+	Auth *AuthConfig `yaml:"auth,omitempty"`
+}
+
+// AuthConfig defines authentication methods
+type AuthConfig struct {
+	// Basic authentication
+	Basic *BasicAuth `yaml:"basic,omitempty"`
+
+	// Bearer token authentication
+	BearerToken string `yaml:"bearerToken,omitempty"`
+
+	// Custom headers
+	Headers map[string]string `yaml:"headers,omitempty"`
+}
+
+// BasicAuth holds username and password for basic authentication
+type BasicAuth struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+}
+
+// LoadFromFile loads configuration from a YAML file
+func LoadFromFile(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
+	}
+
+	var cfg Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	// Set defaults
+	if cfg.ScanInterval == 0 {
+		cfg.ScanInterval = 5 * time.Minute
+	}
+	if cfg.ScanTimeout == 0 {
+		cfg.ScanTimeout = 30 * time.Second
+	}
+	if cfg.MetricsPort == "" {
+		cfg.MetricsPort = "9571"
+	}
+	if cfg.MetricsPath == "" {
+		cfg.MetricsPath = "/metrics"
+	}
+	if cfg.HTMLPath == "" {
+		cfg.HTMLPath = "/charts"
+	}
+
+	// Apply default scan interval to repositories that don't have one
+	for i := range cfg.Repositories {
+		if cfg.Repositories[i].ScanInterval == 0 {
+			cfg.Repositories[i].ScanInterval = cfg.ScanInterval
+		}
+	}
+
+	return &cfg, nil
+}
+
+// LoadFromEnv loads configuration from environment variables (backward compatibility)
+func LoadFromEnv() (*Config, error) {
+	configFile := os.Getenv("CONFIG_FILE")
+	if configFile != "" {
+		return LoadFromFile(configFile)
+	}
+
+	// Fallback to single URL from env var
+	indexURL := os.Getenv("INDEX_URL")
+	if indexURL == "" {
+		return nil, fmt.Errorf("either CONFIG_FILE or INDEX_URL environment variable is required")
+	}
+
+	scanInterval := getEnvDuration("SCAN_INTERVAL", 5*time.Minute)
+
 	cfg := &Config{
-		S3Bucket:     getEnv("S3_BUCKET", ""),
-		S3Region:     getEnv("S3_REGION", "us-east-1"),
-		S3Key:        getEnv("S3_KEY", "index.yaml"),
-		UseIAMRole:   getEnvBool("USE_IAM_ROLE", true),
-		AWSAccessKey: getEnv("AWS_ACCESS_KEY_ID", ""),
-		AWSSecretKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
-		ScanInterval: getEnvDuration("SCAN_INTERVAL", 5*time.Minute),
+		Repositories: []Repository{
+			{
+				Name:         "default",
+				URL:          indexURL,
+				ScanInterval: scanInterval,
+			},
+		},
+		ScanInterval: scanInterval,
 		ScanTimeout:  getEnvDuration("SCAN_TIMEOUT", 30*time.Second),
 		MetricsPort:  getEnv("METRICS_PORT", "9571"),
 		MetricsPath:  getEnv("METRICS_PATH", "/metrics"),
@@ -46,7 +130,7 @@ func LoadFromEnv() *Config {
 		HTMLPath:     getEnv("HTML_PATH", "/charts"),
 	}
 
-	return cfg
+	return cfg, nil
 }
 
 func getEnv(key, defaultValue string) string {
@@ -58,9 +142,7 @@ func getEnv(key, defaultValue string) string {
 
 func getEnvBool(key string, defaultValue bool) bool {
 	if value := os.Getenv(key); value != "" {
-		if b, err := strconv.ParseBool(value); err == nil {
-			return b
-		}
+		return value == "true" || value == "1" || value == "yes"
 	}
 	return defaultValue
 }

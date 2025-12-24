@@ -1,0 +1,32 @@
+# Advanced deployment with multiple repositories and authentication
+# First create a secret with the config file:
+#
+# kubectl create secret generic helm-repo-config \
+#   --from-file=config.yaml=examples/config-multi-auth.yaml \
+#   --namespace monitoring
+
+config:
+  existingSecret:
+    enabled: true
+    name: helm-repo-config
+    key: config.yaml
+
+scan:
+  interval: "10m"
+
+serviceMonitor:
+  enabled: true
+  additionalLabels:
+    prometheus: kube-prometheus
+
+html:
+  enabled: true
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+

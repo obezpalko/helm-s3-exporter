@@ -10,46 +10,56 @@ import (
 	"time"
 
 	"github.com/obezpalko/helm-s3-exporter/internal/analyzer"
+	"github.com/obezpalko/helm-s3-exporter/internal/fetcher"
 	"github.com/obezpalko/helm-s3-exporter/internal/metrics"
-	"github.com/obezpalko/helm-s3-exporter/internal/s3"
 	"github.com/obezpalko/helm-s3-exporter/internal/web"
 	"github.com/obezpalko/helm-s3-exporter/pkg/config"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
-	log.Println("Starting Helm S3 Exporter...")
+	log.Println("Starting Helm Repository Exporter...")
 
 	// Load configuration
-	cfg := config.LoadFromEnv()
-
-	// Validate configuration
-	if cfg.S3Bucket == "" {
-		log.Fatal("S3_BUCKET environment variable is required")
-	}
-
-	if !cfg.UseIAMRole && (cfg.AWSAccessKey == "" || cfg.AWSSecretKey == "") {
-		log.Println("WARNING: USE_IAM_ROLE is false but credentials are not fully configured")
-		log.Println("WARNING: Using static credentials is not recommended for production")
+	cfg, err := config.LoadFromEnv()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
 	log.Printf("Configuration loaded:")
-	log.Printf("  S3 Bucket: %s", cfg.S3Bucket)
-	log.Printf("  S3 Region: %s", cfg.S3Region)
-	log.Printf("  S3 Key: %s", cfg.S3Key)
-	log.Printf("  Use IAM Role: %v", cfg.UseIAMRole)
-	log.Printf("  Scan Interval: %v", cfg.ScanInterval)
+	log.Printf("  Repositories: %d", len(cfg.Repositories))
+	for _, repo := range cfg.Repositories {
+		log.Printf("    - %s: %s (interval: %v)", repo.Name, repo.URL, repo.ScanInterval)
+		if repo.Auth != nil {
+			if repo.Auth.Basic != nil {
+				log.Printf("      Auth: Basic (username: %s)", repo.Auth.Basic.Username)
+			} else if repo.Auth.BearerToken != "" {
+				log.Printf("      Auth: Bearer Token")
+			} else if len(repo.Auth.Headers) > 0 {
+				log.Printf("      Auth: Custom Headers (%d)", len(repo.Auth.Headers))
+			}
+		}
+	}
+	log.Printf("  Default Scan Interval: %v", cfg.ScanInterval)
 	log.Printf("  Scan Timeout: %v", cfg.ScanTimeout)
 	log.Printf("  Metrics Port: %s", cfg.MetricsPort)
 	log.Printf("  Enable HTML: %v", cfg.EnableHTML)
 
-	// Create S3 client
+	// Create HTTP clients for each repository
 	ctx := context.Background()
-	s3Client, err := s3.NewClient(ctx, cfg.S3Region, cfg.S3Bucket, cfg.UseIAMRole, cfg.AWSAccessKey, cfg.AWSSecretKey)
-	if err != nil {
-		log.Fatalf("Failed to create S3 client: %v", err)
+	type repoClient struct {
+		client   *fetcher.Client
+		interval time.Duration
 	}
-	log.Println("S3 client created successfully")
+	var repoClients []repoClient
+	for _, repo := range cfg.Repositories {
+		client := fetcher.NewClient(repo, cfg.ScanTimeout)
+		repoClients = append(repoClients, repoClient{
+			client:   client,
+			interval: repo.ScanInterval,
+		})
+	}
+	log.Printf("Created %d HTTP client(s)", len(repoClients))
 
 	// Initialize metrics
 	metricsCollector := metrics.NewMetrics()
@@ -108,23 +118,45 @@ func main() {
 		}
 	}()
 
-	// Start scraping loop
-	ticker := time.NewTicker(cfg.ScanInterval)
-	defer ticker.Stop()
-
-	// Perform initial scrape
-	performScrape(ctx, s3Client, cfg, metricsCollector, htmlGenerator)
+	// Perform initial scrape for all repositories
+	var allClients []*fetcher.Client
+	for _, rc := range repoClients {
+		allClients = append(allClients, rc.client)
+	}
+	performScrape(ctx, allClients, metricsCollector, htmlGenerator)
 
 	// Setup signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	// Main loop
+	// Create a channel for scrape triggers
+	scrapeChan := make(chan *fetcher.Client, 100)
+
+	// Start per-repository scraping goroutines
+	for _, rc := range repoClients {
+		go func(client *fetcher.Client, interval time.Duration) {
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
+
+			for {
+				select {
+				case <-ticker.C:
+					scrapeChan <- client
+				case <-sigChan:
+					return
+				}
+			}
+		}(rc.client, rc.interval)
+		log.Printf("Started scraper for %s with interval %v", rc.client.RepositoryName(), rc.interval)
+	}
+
+	// Main loop - handle scrapes and signals
 	log.Println("Exporter started successfully")
 	for {
 		select {
-		case <-ticker.C:
-			performScrape(ctx, s3Client, cfg, metricsCollector, htmlGenerator)
+		case client := <-scrapeChan:
+			// Scrape single repository
+			performSingleRepoScrape(ctx, client, metricsCollector, htmlGenerator, allClients)
 		case sig := <-sigChan:
 			log.Printf("Received signal %v, shutting down...", sig)
 			shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -138,54 +170,157 @@ func main() {
 	}
 }
 
-func performScrape(ctx context.Context, s3Client *s3.Client, cfg *config.Config, metricsCollector *metrics.Metrics, htmlGenerator *web.HTMLGenerator) {
-	log.Println("Starting scrape...")
+// performScrape scrapes all repositories (used for initial scrape)
+func performScrape(ctx context.Context, clients []*fetcher.Client, metricsCollector *metrics.Metrics, htmlGenerator *web.HTMLGenerator) {
+	log.Println("Starting initial scrape...")
 	startTime := time.Now()
 
-	// Create context with timeout
-	scrapeCtx, cancel := context.WithTimeout(ctx, cfg.ScanTimeout)
-	defer cancel()
+	// Aggregate analysis from all repositories
+	var totalAnalysis *analyzer.ChartAnalysis
 
-	// Fetch index.yaml
-	data, err := s3Client.GetIndexYAML(scrapeCtx, cfg.S3Key)
-	if err != nil {
-		log.Printf("ERROR: Failed to fetch index.yaml: %v", err)
+	for _, client := range clients {
+		repoName := client.RepositoryName()
+		log.Printf("  Fetching from repository: %s", repoName)
+
+		// Fetch index.yaml
+		data, err := client.GetIndexYAML(ctx)
+		if err != nil {
+			log.Printf("  ERROR: Failed to fetch index.yaml from %s: %v", repoName, err)
+			metricsCollector.RecordError()
+			continue
+		}
+
+		// Parse index
+		index, err := analyzer.ParseIndex(data)
+		if err != nil {
+			log.Printf("  ERROR: Failed to parse index.yaml from %s: %v", repoName, err)
+			metricsCollector.RecordError()
+			continue
+		}
+
+		// Analyze charts
+		analysis := analyzer.AnalyzeCharts(index)
+		log.Printf("  Repository %s: %d charts, %d versions", repoName, analysis.TotalCharts, analysis.TotalVersions)
+
+		// Merge with total analysis
+		if totalAnalysis == nil {
+			totalAnalysis = analysis
+		} else {
+			totalAnalysis = mergeAnalysis(totalAnalysis, analysis)
+		}
+	}
+
+	if totalAnalysis == nil {
+		log.Println("ERROR: No successful scrapes")
 		metricsCollector.RecordError()
 		metricsCollector.ScrapeDuration.Observe(time.Since(startTime).Seconds())
+		return
+	}
+
+	// Update metrics
+	metricsCollector.Update(totalAnalysis)
+	metricsCollector.RecordSuccess()
+
+	// Update HTML dashboard if enabled
+	if htmlGenerator != nil {
+		htmlGenerator.Update(totalAnalysis)
+	}
+
+	duration := time.Since(startTime)
+	metricsCollector.ScrapeDuration.Observe(duration.Seconds())
+
+	log.Printf("Initial scrape completed in %v", duration)
+	log.Printf("  Total charts: %d", totalAnalysis.TotalCharts)
+	log.Printf("  Total versions: %d", totalAnalysis.TotalVersions)
+	if !totalAnalysis.OldestChartDate.IsZero() {
+		log.Printf("  Oldest chart: %s", totalAnalysis.OldestChartDate.Format("2006-01-02 15:04:05"))
+	}
+	if !totalAnalysis.NewestChartDate.IsZero() {
+		log.Printf("  Newest chart: %s", totalAnalysis.NewestChartDate.Format("2006-01-02 15:04:05"))
+	}
+}
+
+// performSingleRepoScrape scrapes a single repository and updates aggregate metrics
+func performSingleRepoScrape(ctx context.Context, client *fetcher.Client, metricsCollector *metrics.Metrics, htmlGenerator *web.HTMLGenerator, allClients []*fetcher.Client) {
+	repoName := client.RepositoryName()
+	log.Printf("Scraping repository: %s", repoName)
+	startTime := time.Now()
+
+	// Fetch index.yaml
+	data, err := client.GetIndexYAML(ctx)
+	if err != nil {
+		log.Printf("ERROR: Failed to fetch index.yaml from %s: %v", repoName, err)
+		metricsCollector.RecordError()
 		return
 	}
 
 	// Parse index
 	index, err := analyzer.ParseIndex(data)
 	if err != nil {
-		log.Printf("ERROR: Failed to parse index.yaml: %v", err)
+		log.Printf("ERROR: Failed to parse index.yaml from %s: %v", repoName, err)
 		metricsCollector.RecordError()
-		metricsCollector.ScrapeDuration.Observe(time.Since(startTime).Seconds())
 		return
 	}
 
 	// Analyze charts
 	analysis := analyzer.AnalyzeCharts(index)
+	duration := time.Since(startTime)
+	log.Printf("Repository %s scraped in %v: %d charts, %d versions", repoName, duration, analysis.TotalCharts, analysis.TotalVersions)
 
-	// Update metrics
+	// For now, we update with just this repo's data
+	// In a more advanced version, we could maintain per-repo state and aggregate
 	metricsCollector.Update(analysis)
 	metricsCollector.RecordSuccess()
+	metricsCollector.ScrapeDuration.Observe(duration.Seconds())
 
 	// Update HTML dashboard if enabled
 	if htmlGenerator != nil {
 		htmlGenerator.Update(analysis)
 	}
+}
 
-	duration := time.Since(startTime)
-	metricsCollector.ScrapeDuration.Observe(duration.Seconds())
+// mergeAnalysis combines two chart analyses
+func mergeAnalysis(a1, a2 *analyzer.ChartAnalysis) *analyzer.ChartAnalysis {
+	merged := &analyzer.ChartAnalysis{
+		TotalCharts:   a1.TotalCharts + a2.TotalCharts,
+		TotalVersions: a1.TotalVersions + a2.TotalVersions,
+		ChartsInfo:    append(a1.ChartsInfo, a2.ChartsInfo...),
+	}
 
-	log.Printf("Scrape completed in %v", duration)
-	log.Printf("  Total charts: %d", analysis.TotalCharts)
-	log.Printf("  Total versions: %d", analysis.TotalVersions)
-	if !analysis.OldestChartDate.IsZero() {
-		log.Printf("  Oldest chart: %s", analysis.OldestChartDate.Format("2006-01-02 15:04:05"))
+	// Merge date statistics
+	if !a1.OldestChartDate.IsZero() && !a2.OldestChartDate.IsZero() {
+		if a1.OldestChartDate.Before(a2.OldestChartDate) {
+			merged.OldestChartDate = a1.OldestChartDate
+		} else {
+			merged.OldestChartDate = a2.OldestChartDate
+		}
+	} else if !a1.OldestChartDate.IsZero() {
+		merged.OldestChartDate = a1.OldestChartDate
+	} else {
+		merged.OldestChartDate = a2.OldestChartDate
 	}
-	if !analysis.NewestChartDate.IsZero() {
-		log.Printf("  Newest chart: %s", analysis.NewestChartDate.Format("2006-01-02 15:04:05"))
+
+	if !a1.NewestChartDate.IsZero() && !a2.NewestChartDate.IsZero() {
+		if a1.NewestChartDate.After(a2.NewestChartDate) {
+			merged.NewestChartDate = a1.NewestChartDate
+		} else {
+			merged.NewestChartDate = a2.NewestChartDate
+		}
+	} else if !a1.NewestChartDate.IsZero() {
+		merged.NewestChartDate = a1.NewestChartDate
+	} else {
+		merged.NewestChartDate = a2.NewestChartDate
 	}
+
+	// For median, we'll just use the median of the two medians (approximation)
+	if !a1.MedianChartDate.IsZero() && !a2.MedianChartDate.IsZero() {
+		avg := (a1.MedianChartDate.Unix() + a2.MedianChartDate.Unix()) / 2
+		merged.MedianChartDate = time.Unix(avg, 0)
+	} else if !a1.MedianChartDate.IsZero() {
+		merged.MedianChartDate = a1.MedianChartDate
+	} else {
+		merged.MedianChartDate = a2.MedianChartDate
+	}
+
+	return merged
 }

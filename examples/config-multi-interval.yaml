@@ -1,0 +1,47 @@
+# Advanced configuration with per-repository scan intervals
+
+repositories:
+  # Critical production repository - check every 5 minutes
+  - name: production-charts
+    url: https://charts.company.com/prod/index.yaml
+    scanInterval: 5m
+    auth:
+      basic:
+        username: helm-user
+        password: prod-password
+
+  # Staging repository - check every 15 minutes
+  - name: staging-charts
+    url: https://charts.company.com/staging/index.yaml
+    scanInterval: 15m
+    auth:
+      basic:
+        username: helm-user
+        password: staging-password
+
+  # Public bitnami - check every 30 minutes (less frequent)
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami/index.yaml
+    scanInterval: 30m
+
+  # Rarely updated internal repo - check every 2 hours
+  - name: legacy-charts
+    url: https://charts.company.com/legacy/index.yaml
+    scanInterval: 2h
+    auth:
+      basic:
+        username: helm-user
+        password: legacy-password
+
+  # This repo will use the default scanInterval (10m)
+  - name: default-interval-repo
+    url: https://charts.company.com/default/index.yaml
+    auth:
+      bearerToken: token123
+
+# Default scan interval (used when repo doesn't specify one)
+scanInterval: 10m
+scanTimeout: 1m
+metricsPort: "9571"
+enableHTML: true
+

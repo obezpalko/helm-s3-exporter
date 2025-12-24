@@ -11,39 +11,31 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-# S3 Configuration
-s3:
-  # S3 bucket name containing the Helm repository
-  bucket: ""
-  # AWS region where the bucket is located
-  region: "us-east-1"
-  # Path to the index.yaml file in the bucket
-  key: "index.yaml"
-
-# Authentication Configuration
-auth:
-  # Use IAM role for authentication (recommended for EKS with IRSA)
-  useIAMRole: true
-  # Existing secret name containing AWS credentials
-  # The secret should contain keys: AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-  existingSecret: ""
-  # If not using existing secret and useIAMRole is false, specify credentials here
-  # WARNING: This is insecure for production use
-  credentials:
-    accessKeyId: ""
-    secretAccessKey: ""
+# Repository Configuration
+config:
+  # Use inline config (simple single repository)
+  inline:
+    enabled: false
+    url: ""
+  
+  # Use config from existing Secret (recommended for multiple repos with auth)
+  existingSecret:
+    enabled: false
+    name: ""
+    key: "config.yaml"
+  
+  # Use config from existing ConfigMap (for public repos without auth)
+  existingConfigMap:
+    enabled: false
+    name: ""
+    key: "config.yaml"
 
 # Service Account configuration
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
-  # IAM role ARN for IRSA (IAM Roles for Service Accounts)
-  # When set, automatically adds the eks.amazonaws.com/role-arn annotation
-  roleArn: ""
-  # Example: arn:aws:iam::123456789012:role/helm-s3-exporter-role
   
   # Additional annotations to add to the service account
-  # The roleArn will be added automatically if specified
   annotations: {}
   
   # The name of the service account to use

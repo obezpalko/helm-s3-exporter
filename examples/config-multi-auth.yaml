@@ -1,0 +1,45 @@
+# Advanced configuration with multiple repositories and authentication
+
+repositories:
+  # Public repository (no auth)
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami/index.yaml
+
+  # Private repository with basic authentication
+  - name: company-internal
+    url: https://charts.company.com/internal/index.yaml
+    auth:
+      basic:
+        username: helm-user
+        password: secret-password
+
+  # Private repository with bearer token
+  - name: github-private
+    url: https://raw.githubusercontent.com/company/charts/main/index.yaml
+    auth:
+      bearerToken: ghp_xxxxxxxxxxxxxxxxxxxx
+
+  # Repository with custom headers
+  - name: custom-auth
+    url: https://charts.custom.com/index.yaml
+    auth:
+      headers:
+        X-API-Key: your-api-key-here
+        X-Custom-Header: custom-value
+
+  # S3 bucket (public access)
+  - name: s3-public
+    url: https://my-bucket.s3.us-west-2.amazonaws.com/index.yaml
+
+# Scan configuration
+scanInterval: 10m
+scanTimeout: 1m
+
+# Server configuration
+metricsPort: "9571"
+metricsPath: /metrics
+
+# Enable HTML dashboard
+enableHTML: true
+htmlPath: /charts
+

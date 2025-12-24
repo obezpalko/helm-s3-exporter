@@ -1,223 +1,353 @@
 # Quick Start Guide
 
-This guide will help you get Helm S3 Exporter up and running in under 5 minutes.
+Get up and running with Helm S3 Exporter in minutes!
 
-## Prerequisites
+## Installation Options
 
-- Kubernetes cluster (1.19+)
-- Helm 3.x installed
-- S3 bucket with Helm charts
-- AWS credentials or IAM role
+### Option 1: Single Public Repository (Simplest)
 
-## Installation Steps
-
-### Step 1: Choose Your Authentication Method
-
-#### Option A: AWS EKS with IRSA (Recommended)
-
-If you're on AWS EKS, set up IRSA first:
+Perfect for monitoring a single public Helm repository.
 
 ```bash
-# Run the setup script
-./examples/setup-irsa.sh my-cluster us-west-2 my-helm-bucket monitoring
-```
-
-Or create manually:
-```bash
-# Create IAM policy
-aws iam create-policy \
-  --policy-name helm-s3-exporter-policy \
-  --policy-document file://examples/aws-iam-policy.json
-
-# Create service account with IRSA
-eksctl create iamserviceaccount \
-  --cluster=my-cluster \
-  --namespace=monitoring \
-  --name=helm-s3-exporter \
-  --attach-policy-arn=arn:aws:iam::ACCOUNT:policy/helm-s3-exporter-policy \
-  --approve
-```
-
-#### Option B: Static Credentials (Development Only)
-
-Create a secret with your AWS credentials:
-
-```bash
-kubectl create secret generic aws-credentials \
-  --from-literal=AWS_ACCESS_KEY_ID=your-key \
-  --from-literal=AWS_SECRET_ACCESS_KEY=your-secret \
-  --namespace=monitoring
-```
-
-### Step 2: Install the Helm Chart
-
-#### Using IRSA:
-
-```bash
-helm install helm-s3-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-s3-exporter \
+  --set config.inline.enabled=true \
+  --set config.inline.url=https://charts.bitnami.com/bitnami/index.yaml \
   --namespace monitoring \
-  --create-namespace \
-  --set s3.bucket=my-helm-charts \
-  --set s3.region=us-west-2 \
-  --set serviceAccount.roleArn=arn:aws:iam::ACCOUNT_ID:role/helm-s3-exporter-role
+  --create-namespace
 ```
 
-#### Using Static Credentials:
+**Verify it's working:**
 
 ```bash
-helm install helm-s3-exporter ./charts/helm-s3-exporter \
-  --namespace monitoring \
-  --create-namespace \
-  --set s3.bucket=my-helm-charts \
-  --set s3.region=us-west-2 \
-  --set auth.useIAMRole=false \
-  --set auth.existingSecret=aws-credentials
-```
-
-### Step 3: Verify Installation
-
-```bash
-# Check if the pod is running
+# Check pod status
 kubectl get pods -n monitoring
 
 # View logs
 kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
 
-# Port-forward to access metrics
-kubectl port-forward -n monitoring svc/helm-s3-exporter 9571:9571
+# Access metrics
+kubectl port-forward -n monitoring svc/my-exporter 9571:9571
+curl http://localhost:9571/metrics | grep helm_s3
 ```
 
-### Step 4: Access Metrics
+---
 
-Open your browser or use curl:
+### Option 2: Multiple Public Repositories
+
+Monitor multiple public repositories.
+
+**Step 1: Create config file**
 
 ```bash
-# View metrics
-curl http://localhost:9571/metrics
+cat > config.yaml <<EOF
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami/index.yaml
+  
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts/index.yaml
+  
+  - name: jetstack
+    url: https://charts.jetstack.io/index.yaml
 
-# View HTML dashboard (if enabled)
-curl http://localhost:9571/charts
+scanInterval: 10m  # Default interval for all repos
+scanTimeout: 1m
+enableHTML: true
+EOF
 ```
 
-## Example Metrics Output
-
-You should see metrics like:
-
-```prometheus
-# HELP helm_s3_charts_total Total number of distinct Helm charts
-# TYPE helm_s3_charts_total gauge
-helm_s3_charts_total 15
-
-# HELP helm_s3_chart_versions Number of versions for each chart
-# TYPE helm_s3_chart_versions gauge
-helm_s3_chart_versions{chart="nginx"} 5
-helm_s3_chart_versions{chart="postgresql"} 3
-
-# HELP helm_s3_scrape_duration_seconds Duration of the S3 scrape operation
-# TYPE helm_s3_scrape_duration_seconds histogram
-helm_s3_scrape_duration_seconds_bucket{le="0.005"} 0
-helm_s3_scrape_duration_seconds_bucket{le="0.01"} 0
-helm_s3_scrape_duration_seconds_bucket{le="0.025"} 1
+**Pro Tip:** You can set different scan intervals per repository:
+```yaml
+repositories:
+  - name: critical-prod
+    url: https://charts.company.com/prod/index.yaml
+    scanInterval: 5m  # Check every 5 minutes
+  
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami/index.yaml
+    scanInterval: 30m  # Check every 30 minutes
 ```
 
-## Optional: Enable HTML Dashboard
-
-Update your installation with:
+**Step 2: Create ConfigMap**
 
 ```bash
-helm upgrade helm-s3-exporter ./charts/helm-s3-exporter \
+kubectl create configmap helm-repo-config \
+  --from-file=config.yaml=config.yaml \
   --namespace monitoring \
-  --reuse-values \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+**Step 3: Deploy**
+
+```bash
+helm install my-exporter ./charts/helm-s3-exporter \
+  --namespace monitoring \
+  --create-namespace \
+  --set config.existingConfigMap.enabled=true \
+  --set config.existingConfigMap.name=helm-repo-config \
   --set html.enabled=true
 ```
 
-Then access via port-forward:
+**Access the dashboard:**
 
 ```bash
-kubectl port-forward -n monitoring svc/helm-s3-exporter 9571:9571
+kubectl port-forward -n monitoring svc/my-exporter 9571:9571
 # Open http://localhost:9571/charts in your browser
 ```
 
-## Optional: Enable Prometheus Integration
+---
 
-If you're using Prometheus Operator:
+### Option 3: Private Repositories with Authentication
+
+Monitor private repositories that require authentication.
+
+**Step 1: Create config file with credentials**
 
 ```bash
-helm upgrade helm-s3-exporter ./charts/helm-s3-exporter \
+cat > config.yaml <<EOF
+repositories:
+  # Public repository
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami/index.yaml
+  
+  # Private with Basic Auth
+  - name: company-charts
+    url: https://charts.company.com/index.yaml
+    auth:
+      basic:
+        username: helm-user
+        password: your-password-here
+  
+  # Private with Bearer Token (e.g., GitHub)
+  - name: github-private
+    url: https://raw.githubusercontent.com/yourorg/charts/main/index.yaml
+    auth:
+      bearerToken: ghp_your_github_token_here
+
+scanInterval: 10m
+enableHTML: true
+EOF
+```
+
+**Step 2: Create Secret**
+
+```bash
+kubectl create secret generic helm-repo-config \
+  --from-file=config.yaml=config.yaml \
+  --namespace monitoring
+```
+
+**Step 3: Deploy**
+
+```bash
+helm install my-exporter ./charts/helm-s3-exporter \
   --namespace monitoring \
-  --reuse-values \
+  --create-namespace \
+  --set config.existingSecret.enabled=true \
+  --set config.existingSecret.name=helm-repo-config \
+  --set html.enabled=true
+```
+
+---
+
+### Option 4: With Prometheus Operator
+
+Enable ServiceMonitor for automatic Prometheus scraping.
+
+```bash
+helm install my-exporter ./charts/helm-s3-exporter \
+  --namespace monitoring \
+  --create-namespace \
+  --set config.inline.enabled=true \
+  --set config.inline.url=https://charts.bitnami.com/bitnami/index.yaml \
   --set serviceMonitor.enabled=true \
   --set serviceMonitor.additionalLabels.prometheus=kube-prometheus
 ```
 
-Or apply the example Prometheus rules:
+**Verify in Prometheus:**
 
 ```bash
-kubectl apply -f examples/prometheus-rules.yaml
+# Port forward to Prometheus
+kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090
+
+# Open http://localhost:9090 and search for: helm_s3_charts_total
 ```
+
+---
+
+## Common Use Cases
+
+### S3 Bucket (Public)
+
+```bash
+helm install s3-exporter ./charts/helm-s3-exporter \
+  --namespace monitoring \
+  --set config.inline.enabled=true \
+  --set config.inline.url=https://my-bucket.s3.us-west-2.amazonaws.com/index.yaml
+```
+
+### GitHub Repository (Private)
+
+```yaml
+# config.yaml
+repositories:
+  - name: my-charts
+    url: https://raw.githubusercontent.com/myorg/helm-charts/main/index.yaml
+    auth:
+      bearerToken: ghp_xxxxxxxxxxxx
+```
+
+### Artifactory
+
+```yaml
+# config.yaml
+repositories:
+  - name: artifactory
+    url: https://artifactory.company.com/artifactory/helm-local/index.yaml
+    auth:
+      basic:
+        username: admin
+        password: password
+```
+
+### Harbor
+
+```yaml
+# config.yaml
+repositories:
+  - name: harbor
+    url: https://harbor.company.com/chartrepo/library/index.yaml
+    auth:
+      basic:
+        username: admin
+        password: Harbor12345
+```
+
+---
+
+## Verification Checklist
+
+After installation, verify everything is working:
+
+- [ ] **Pod is running**
+  ```bash
+  kubectl get pods -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+  ```
+
+- [ ] **Logs show successful scraping**
+  ```bash
+  kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+  # Should see: "Scrape completed" messages
+  ```
+
+- [ ] **Metrics are exposed**
+  ```bash
+  kubectl port-forward -n monitoring svc/my-exporter 9571:9571
+  curl http://localhost:9571/metrics | grep helm_s3_charts_total
+  ```
+
+- [ ] **ServiceMonitor is created** (if enabled)
+  ```bash
+  kubectl get servicemonitor -n monitoring
+  ```
+
+- [ ] **Prometheus is scraping** (if using Prometheus Operator)
+  - Check Prometheus UI → Status → Targets
+  - Look for `helm-s3-exporter` target
+
+---
 
 ## Troubleshooting
 
-### Pod Not Starting
+### Pod is CrashLooping
 
-Check logs for errors:
 ```bash
+# Check logs
 kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+
+# Common issues:
+# - Missing config: Enable one of config.inline, config.existingSecret, or config.existingConfigMap
+# - Invalid URL: Test URL manually with curl
+# - Auth failure: Verify credentials
 ```
 
-Common issues:
-- **AWS credentials error**: Check service account annotations or secret
-- **S3 bucket not accessible**: Verify IAM permissions and bucket name
-- **Region mismatch**: Ensure correct AWS region is specified
+### No Metrics Showing
 
-### No Metrics Appearing
-
-1. Check if the exporter is scraping:
 ```bash
-kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter | grep "Scrape completed"
-```
+# Verify service is accessible
+kubectl get svc -n monitoring my-exporter
 
-2. Verify the endpoint is accessible:
-```bash
-kubectl port-forward -n monitoring svc/helm-s3-exporter 9571:9571
+# Port forward and test
+kubectl port-forward -n monitoring svc/my-exporter 9571:9571
 curl http://localhost:9571/metrics
+
+# Check for errors in logs
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter | grep -i error
 ```
 
-### ServiceMonitor Not Working
+### Authentication Failures
 
-Verify ServiceMonitor is created:
 ```bash
-kubectl get servicemonitor -n monitoring
-kubectl describe servicemonitor helm-s3-exporter -n monitoring
+# Test URL manually
+curl -I https://charts.example.com/index.yaml
+
+# Test with auth
+curl -u username:password https://charts.example.com/index.yaml
+curl -H "Authorization: Bearer token" https://charts.example.com/index.yaml
+
+# Verify secret exists
+kubectl get secret helm-repo-config -n monitoring -o yaml
 ```
 
-Check if your Prometheus is configured to discover ServiceMonitors in this namespace.
+---
 
 ## Next Steps
 
-- Configure alerting rules (see `examples/prometheus-rules.yaml`)
-- Adjust scan interval for your needs
-- Set up resource limits for production
-- Review security best practices in `SECURITY.md`
-- Create Grafana dashboards for visualization
+- 📖 Read the [Configuration Guide](examples/CONFIGURATION_GUIDE.md) for advanced options
+- 🔍 Set up [Prometheus alerts](examples/prometheus-rules.yaml)
+- 📊 Explore the [HTML dashboard](http://localhost:9571/charts) (if enabled)
+- 🎯 Check out more [examples](examples/)
 
-## Uninstallation
+---
 
-To remove the exporter:
+## Quick Reference
 
-```bash
-helm uninstall helm-s3-exporter -n monitoring
-```
-
-To also remove the namespace:
+### Useful Commands
 
 ```bash
-kubectl delete namespace monitoring
+# View logs
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter -f
+
+# Restart deployment
+kubectl rollout restart deployment -n monitoring my-exporter
+
+# Update config
+kubectl create secret generic helm-repo-config \
+  --from-file=config.yaml=config.yaml \
+  --namespace monitoring \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl rollout restart deployment -n monitoring my-exporter
+
+# Uninstall
+helm uninstall my-exporter -n monitoring
 ```
 
-## Getting Help
+### Example Metrics Queries
 
-- Check the full [README.md](README.md) for detailed documentation
-- Review [examples/](examples/) for configuration templates
-- Open an issue on GitHub for bugs or feature requests
+```promql
+# Total charts
+helm_s3_charts_total
 
+# Charts with many versions
+helm_s3_chart_version_count > 10
+
+# Scrape errors
+rate(helm_s3_scrape_errors_total[5m])
+
+# Scrape duration
+helm_s3_scrape_duration_seconds
+```
+
+---
+
+For more details, see the [full README](README.md).

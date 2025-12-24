@@ -1,448 +1,539 @@
 # Helm S3 Exporter
 
-<p align="center">
-  <img src="icon.svg" alt="Helm S3 Exporter Logo" width="150" height="150">
-</p>
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Report Card](https://goreportcard.com/badge/github.com/obezpalko/helm-s3-exporter)](https://goreportcard.com/report/github.com/obezpalko/helm-s3-exporter)
 
-<p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
-  <a href="https://go.dev/"><img src="https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go" alt="Go Version"></a>
-  <a href="https://github.com/obezpalko/helm-s3-exporter/actions"><img src="https://github.com/obezpalko/helm-s3-exporter/workflows/Build%20and%20Test/badge.svg" alt="Build Status"></a>
-</p>
+A Prometheus exporter for Helm chart repositories. Monitor multiple chart repositories with flexible authentication support.
 
-A Prometheus exporter for Helm charts stored in AWS S3 buckets. This exporter helps administrators analyze and monitor the state of Helm chart repositories by collecting data from S3 and exposing comprehensive metrics.
+## Overview
+
+The Helm S3 Exporter monitors Helm chart repositories by periodically fetching and analyzing their `index.yaml` files. It exposes Prometheus metrics about charts, versions, and repository health.
 
 ## Features
 
+✅ **Multiple Repositories** - Monitor multiple chart repositories simultaneously  
+✅ **Flexible Authentication** - Support for Basic Auth, Bearer tokens, and custom headers  
+✅ **HTTP/HTTPS Support** - Fetch from any accessible URL (including S3, GitHub, Artifactory, Harbor, etc.)  
 ✅ **Kubernetes Native** - Designed to run in Kubernetes with full cloud-native support  
 ✅ **Prometheus Metrics** - Exposes detailed metrics about charts, versions, and ages  
-✅ **Flexible Authentication** - Supports both IAM roles (IRSA) and static credentials  
-✅ **Configurable Scanning** - Adjustable scan intervals and timeouts  
-✅ **Optional HTML Dashboard** - Beautiful web interface to visualize chart information  
-✅ **ServiceMonitor Support** - First-class support for Prometheus Operator  
-✅ **Secure by Default** - Runs as non-root with minimal privileges  
+✅ **ServiceMonitor Ready** - First-class Prometheus Operator support  
+✅ **Optional HTML Dashboard** - Human-friendly web interface  
+✅ **Lightweight** - Minimal resource footprint  
+✅ **Secure** - Runs as non-root with read-only filesystem
 
-## Architecture
+## Quick Start
 
-The exporter periodically scans an S3 bucket for Helm repository `index.yaml` files, analyzes the chart metadata, and exposes the following information:
-
-- Total number of distinct charts
-- Number of versions per chart
-- Age information (oldest, newest, median) for each chart
-- Overall repository statistics
-
-## Metrics
-
-The exporter provides the following Prometheus metrics:
-
-| Metric Name | Type | Description | Labels |
-|-------------|------|-------------|--------|
-| `helm_s3_charts_total` | Gauge | Total number of distinct Helm charts | - |
-| `helm_s3_versions_total` | Gauge | Total number of chart versions across all charts | - |
-| `helm_s3_chart_versions` | Gauge | Number of versions for each chart | `chart` |
-| `helm_s3_chart_age_oldest_seconds` | Gauge | Unix timestamp of the oldest version | `chart` |
-| `helm_s3_chart_age_newest_seconds` | Gauge | Unix timestamp of the newest version | `chart` |
-| `helm_s3_chart_age_median_seconds` | Gauge | Unix timestamp of the median version | `chart` |
-| `helm_s3_overall_age_oldest_seconds` | Gauge | Unix timestamp of the oldest chart across all | - |
-| `helm_s3_overall_age_newest_seconds` | Gauge | Unix timestamp of the newest chart across all | - |
-| `helm_s3_overall_age_median_seconds` | Gauge | Unix timestamp of the median chart across all | - |
-| `helm_s3_scrape_duration_seconds` | Histogram | Duration of the S3 scrape operation | - |
-| `helm_s3_scrape_errors_total` | Counter | Total number of scrape errors | - |
-| `helm_s3_last_scrape_success` | Gauge | Unix timestamp of the last successful scrape | - |
-
-## Installation
-
-### Prerequisites
-
-- Kubernetes cluster (1.19+)
-- Helm 3.x
-- AWS S3 bucket with Helm repository
-- AWS credentials or IAM role for S3 access
-
-### Quick Start
-
-1. **Add the Helm repository** (when published):
+### Simple Single Repository
 
 ```bash
-helm repo add helm-s3-exporter https://obezpalko.github.io/helm-s3-exporter
-helm repo update
+# Install with Helm (single public repository)
+helm install helm-s3-exporter ./charts/helm-s3-exporter \
+  --set config.inline.enabled=true \
+  --set config.inline.url=https://charts.bitnami.com/bitnami/index.yaml \
+  --namespace monitoring --create-namespace
 ```
 
-2. **Install the chart**:
+### Multiple Repositories with Authentication
 
 ```bash
-helm install my-exporter helm-s3-exporter/helm-s3-exporter \
-  --set s3.bucket=my-helm-repo-bucket \
-  --set s3.region=us-east-1
-```
+# 1. Create config file
+cat > config.yaml <<EOF
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami/index.yaml
+  
+  - name: private-repo
+    url: https://charts.company.com/index.yaml
+    auth:
+      basic:
+        username: myuser
+        password: mypassword
 
-### Local Installation
+scanInterval: 10m
+EOF
 
-For local development or testing:
+# 2. Create secret
+kubectl create secret generic helm-repo-config \
+  --from-file=config.yaml=config.yaml \
+  --namespace monitoring
 
-```bash
-helm install my-exporter ./charts/helm-s3-exporter \
-  --set s3.bucket=my-helm-repo-bucket \
-  --set s3.region=us-east-1
+# 3. Install with Helm
+helm install helm-s3-exporter ./charts/helm-s3-exporter \
+  --set config.existingSecret.enabled=true \
+  --set config.existingSecret.name=helm-repo-config \
+  --namespace monitoring --create-namespace
 ```
 
 ## Configuration
 
-### Basic Configuration
+### Configuration Methods
 
-The minimum required configuration:
+The exporter supports three configuration methods:
 
-```yaml
-s3:
-  bucket: "my-helm-repo-bucket"
-  region: "us-east-1"
-```
+1. **Inline Config** - Simple single repository
+2. **Secret** - Multiple repositories with authentication (recommended)
+3. **ConfigMap** - Multiple public repositories
 
-### Authentication Options
+### Method 1: Inline Configuration (Simple)
 
-#### Option 1: IAM Role (Recommended for EKS)
-
-Using [IAM Roles for Service Accounts (IRSA)](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html):
+Best for: Single public repository
 
 ```yaml
-auth:
-  useIAMRole: true
-
-serviceAccount:
-  create: true
-  roleArn: arn:aws:iam::123456789012:role/helm-s3-exporter-role
+# values.yaml
+config:
+  inline:
+    enabled: true
+    url: "https://charts.bitnami.com/bitnami/index.yaml"
 ```
 
-**Required IAM Policy**:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:ListBucket"
-      ],
-      "Resource": [
-        "arn:aws:s3:::my-helm-repo-bucket",
-        "arn:aws:s3:::my-helm-repo-bucket/*"
-      ]
-    }
-  ]
-}
+Deploy:
+```bash
+helm install my-exporter ./charts/helm-s3-exporter -f values.yaml
 ```
 
-#### Option 2: Existing Secret
+### Method 2: Secret (Recommended for Private Repos)
+
+Best for: Multiple repositories with authentication
+
+**Step 1: Create config.yaml**
 
 ```yaml
-auth:
-  useIAMRole: false
-  existingSecret: "aws-credentials"
+repositories:
+  # Public repository
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami/index.yaml
+  
+  # Private with Basic Auth
+  - name: company-charts
+    url: https://charts.company.com/index.yaml
+    auth:
+      basic:
+        username: helm-user
+        password: secret-password
+  
+  # Private with Bearer Token
+  - name: github-private
+    url: https://raw.githubusercontent.com/company/charts/main/index.yaml
+    auth:
+      bearerToken: ghp_xxxxxxxxxxxx
+  
+  # Custom headers (API keys, etc.)
+  - name: custom-auth
+    url: https://charts.example.com/index.yaml
+    auth:
+      headers:
+        X-API-Key: your-api-key
+        X-Custom-Header: custom-value
+
+scanInterval: 10m
+scanTimeout: 1m
+metricsPort: "9571"
+enableHTML: true
 ```
 
-The secret should contain:
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: aws-credentials
-type: Opaque
-data:
-  AWS_ACCESS_KEY_ID: <base64-encoded>
-  AWS_SECRET_ACCESS_KEY: <base64-encoded>
+**Step 2: Create Secret**
+
+```bash
+kubectl create secret generic helm-repo-config \
+  --from-file=config.yaml=config.yaml \
+  --namespace monitoring
 ```
 
-#### Option 3: Static Credentials (NOT RECOMMENDED)
+**Step 3: Deploy**
 
-⚠️ **WARNING**: Only use for development/testing!
-
-```yaml
-auth:
-  useIAMRole: false
-  credentials:
-    accessKeyId: "AKIAIOSFODNN7EXAMPLE"
-    secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+```bash
+helm install my-exporter ./charts/helm-s3-exporter \
+  --namespace monitoring \
+  --set config.existingSecret.enabled=true \
+  --set config.existingSecret.name=helm-repo-config
 ```
 
-### Advanced Configuration
+### Method 3: ConfigMap (Public Repos Only)
+
+Best for: Multiple public repositories without sensitive data
+
+```bash
+kubectl create configmap helm-repo-config \
+  --from-file=config.yaml=config.yaml \
+  --namespace monitoring
+
+helm install my-exporter ./charts/helm-s3-exporter \
+  --namespace monitoring \
+  --set config.existingConfigMap.enabled=true \
+  --set config.existingConfigMap.name=helm-repo-config
+```
+
+### Authentication Methods
+
+#### Basic Authentication
 
 ```yaml
+repositories:
+  - name: private-repo
+    url: https://charts.company.com/index.yaml
+    auth:
+      basic:
+        username: myuser
+        password: mypassword
+```
+
+#### Bearer Token
+
+```yaml
+repositories:
+  - name: github-private
+    url: https://raw.githubusercontent.com/company/charts/main/index.yaml
+    auth:
+      bearerToken: ghp_xxxxxxxxxxxxxxxxxxxx
+```
+
+#### Custom Headers (API Keys, etc.)
+
+```yaml
+repositories:
+  - name: api-protected
+    url: https://charts.example.com/index.yaml
+    auth:
+      headers:
+        X-API-Key: your-api-key
+        X-Request-ID: unique-id
+```
+
+#### Combined Authentication
+
+```yaml
+repositories:
+  - name: multi-auth
+    url: https://charts.example.com/index.yaml
+    auth:
+      bearerToken: token123
+      headers:
+        X-Custom-Header: value
+```
+
+### Configuration File Reference
+
+Full configuration file options:
+
+```yaml
+# List of repositories to monitor
+repositories:
+  - name: string              # Friendly name for the repository
+    url: string               # URL to index.yaml
+    scanInterval: duration    # Optional: Override default interval (e.g., 5m, 1h, 30s)
+    auth:                     # Optional authentication
+      basic:                  # Basic authentication
+        username: string
+        password: string
+      bearerToken: string     # Bearer token
+      headers:                # Custom headers
+        Header-Name: value
+
 # Scan configuration
-scan:
-  interval: "5m"     # How often to scan S3
-  timeout: "30s"     # Timeout for S3 operations
+scanInterval: duration        # Default scan interval (e.g., 5m, 1h) [default: 5m]
+                              # Repos can override with their own scanInterval
+scanTimeout: duration         # Timeout for each scan [default: 30s]
 
-# Enable HTML dashboard
-html:
-  enabled: true
-  path: "/charts"
+# Server configuration
+metricsPort: string           # Port for metrics [default: "9571"]
+metricsPath: string           # Path for metrics [default: "/metrics"]
 
-# Enable ServiceMonitor for Prometheus Operator
+# Optional HTML dashboard
+enableHTML: bool              # Enable HTML dashboard [default: false]
+htmlPath: string              # Path for HTML [default: "/charts"]
+```
+
+See [examples/CONFIGURATION_GUIDE.md](examples/CONFIGURATION_GUIDE.md) for comprehensive examples.
+
+## Prometheus Metrics
+
+### Available Metrics
+
+| Metric | Type | Description | Labels |
+|--------|------|-------------|--------|
+| `helm_s3_charts_total` | Gauge | Total number of unique charts | - |
+| `helm_s3_chart_versions_total` | Gauge | Total number of chart versions across all charts | - |
+| `helm_s3_chart_info` | Gauge | Information about each chart | `chart_name`, `latest_version`, `app_version`, `description` |
+| `helm_s3_chart_version_count` | Gauge | Number of versions for each chart | `chart_name` |
+| `helm_s3_chart_latest_timestamp` | Gauge | Unix timestamp of the latest chart version | `chart_name` |
+| `helm_s3_chart_oldest_timestamp` | Gauge | Unix timestamp of the oldest chart version | `chart_name` |
+| `helm_s3_scrape_duration_seconds` | Gauge | Duration of the last scrape in seconds | - |
+| `helm_s3_scrape_errors_total` | Counter | Total number of scrape errors | - |
+| `helm_s3_scrape_success_total` | Counter | Total number of successful scrapes | - |
+| `helm_s3_repository_oldest_chart_timestamp` | Gauge | Unix timestamp of the oldest chart in the repository | - |
+| `helm_s3_repository_newest_chart_timestamp` | Gauge | Unix timestamp of the newest chart in the repository | - |
+| `helm_s3_repository_median_chart_age_days` | Gauge | Median age of charts in days | - |
+
+### Example Queries
+
+```promql
+# Total number of charts
+helm_s3_charts_total
+
+# Charts with more than 10 versions
+helm_s3_chart_version_count > 10
+
+# Age of the newest chart in hours
+(time() - helm_s3_repository_newest_chart_timestamp) / 3600
+
+# Scrape success rate
+rate(helm_s3_scrape_success_total[5m]) / 
+(rate(helm_s3_scrape_success_total[5m]) + rate(helm_s3_scrape_errors_total[5m]))
+
+# Chart that hasn't been updated in 90 days
+(time() - helm_s3_chart_latest_timestamp) / 86400 > 90
+```
+
+## Helm Chart Values
+
+### Key Configuration Options
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `config.inline.enabled` | Enable inline config | `false` |
+| `config.inline.url` | Repository URL (if inline enabled) | `""` |
+| `config.existingSecret.enabled` | Use existing secret | `false` |
+| `config.existingSecret.name` | Secret name | `""` |
+| `config.existingConfigMap.enabled` | Use existing configmap | `false` |
+| `config.existingConfigMap.name` | ConfigMap name | `""` |
+| `scan.interval` | Scan interval | `"5m"` |
+| `scan.timeout` | Scan timeout | `"30s"` |
+| `serviceMonitor.enabled` | Enable ServiceMonitor | `false` |
+| `serviceMonitor.additionalLabels` | Labels for ServiceMonitor | `{}` |
+| `html.enabled` | Enable HTML dashboard | `false` |
+| `resources.limits.memory` | Memory limit | `128Mi` |
+| `resources.requests.memory` | Memory request | `64Mi` |
+
+See [charts/helm-s3-exporter/values.yaml](charts/helm-s3-exporter/values.yaml) for all options.
+
+## Examples
+
+### Public Repositories
+
+```bash
+helm install bitnami-exporter ./charts/helm-s3-exporter \
+  -f examples/values-simple-url.yaml
+```
+
+### Multiple Repositories with Auth
+
+```bash
+# Create secret
+kubectl create secret generic helm-repos \
+  --from-file=config.yaml=examples/config-multi-auth.yaml
+
+# Deploy
+helm install multi-exporter ./charts/helm-s3-exporter \
+  -f examples/values-multi-repos.yaml
+```
+
+### S3 Bucket (Public)
+
+```yaml
+# values.yaml
+config:
+  inline:
+    enabled: true
+    url: "https://my-charts.s3.us-west-2.amazonaws.com/index.yaml"
+```
+
+### GitHub Repository
+
+```yaml
+repositories:
+  - name: my-charts
+    url: https://raw.githubusercontent.com/myorg/helm-charts/main/index.yaml
+    auth:
+      bearerToken: ${GITHUB_TOKEN}
+```
+
+See [examples/](examples/) directory for more examples.
+
+## Prometheus Integration
+
+### ServiceMonitor (Prometheus Operator)
+
+```yaml
 serviceMonitor:
   enabled: true
+  additionalLabels:
+    prometheus: kube-prometheus
   interval: 30s
-  additionalLabels:
-    prometheus: kube-prometheus
-
-# Resource limits
-resources:
-  limits:
-    cpu: 200m
-    memory: 256Mi
-  requests:
-    cpu: 100m
-    memory: 128Mi
 ```
 
-See [`charts/helm-s3-exporter/values.yaml`](charts/helm-s3-exporter/values.yaml) for all available options.
-
-## Usage Examples
-
-### Example 1: EKS with IRSA
-
-```yaml
-# values-eks.yaml
-s3:
-  bucket: "production-helm-charts"
-  region: "us-west-2"
-
-auth:
-  useIAMRole: true
-
-serviceAccount:
-  create: true
-  roleArn: arn:aws:iam::123456789012:role/helm-s3-exporter
-
-serviceMonitor:
-  enabled: true
-  additionalLabels:
-    prometheus: kube-prometheus
-
-html:
-  enabled: true
-```
-
-Install:
-```bash
-helm install helm-exporter ./charts/helm-s3-exporter -f values-eks.yaml
-```
-
-### Example 2: Development with LocalStack
-
-```yaml
-# values-localstack.yaml
-s3:
-  bucket: "test-bucket"
-  region: "us-east-1"
-  key: "index.yaml"
-
-auth:
-  useIAMRole: false
-  credentials:
-    accessKeyId: "test"
-    secretAccessKey: "test"
-
-scan:
-  interval: "1m"
-
-html:
-  enabled: true
-
-extraEnv:
-  - name: AWS_ENDPOINT_URL
-    value: "http://localstack:4566"
-```
-
-### Example 3: Multiple Buckets
-
-Deploy multiple instances for different buckets:
+Or set from command line:
 
 ```bash
-helm install charts-prod ./charts/helm-s3-exporter \
-  --set s3.bucket=prod-charts \
-  --set nameOverride=prod
+helm install my-exporter ./charts/helm-s3-exporter \
+  --set serviceMonitor.enabled=true \
+  --set serviceMonitor.additionalLabels.prometheus=kube-prometheus
+```
 
-helm install charts-staging ./charts/helm-s3-exporter \
-  --set s3.bucket=staging-charts \
-  --set nameOverride=staging
+### Manual Scrape Configuration
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: 'helm-s3-exporter'
+    static_configs:
+      - targets: ['helm-s3-exporter.monitoring.svc.cluster.local:9571']
+    scrape_interval: 30s
+```
+
+### Alerting Rules
+
+Example alerts in [examples/prometheus-rules.yaml](examples/prometheus-rules.yaml):
+
+```yaml
+groups:
+  - name: helm-repository
+    rules:
+      - alert: HelmRepositoryScrapeError
+        expr: increase(helm_s3_scrape_errors_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Failed to scrape Helm repository"
 ```
 
 ## Development
 
-### Building Locally
+### Prerequisites
+
+- Go 1.21+
+- Docker
+- kubectl
+- Helm 3.x
+- Make (optional)
+
+### Building
 
 ```bash
-# Build the binary
+# Build binary
 make build
-
-# Run locally (requires AWS credentials)
-export S3_BUCKET=my-bucket
-export S3_REGION=us-east-1
-make run
 
 # Run tests
 make test
-```
 
-### Building Docker Image
+# Run linter
+make lint
 
-```bash
-# Build image
+# Build Docker image
 make docker-build
-
-# Push image (use GitHub Container Registry)
-make docker-push DOCKER_REGISTRY=ghcr.io/obezpalko
 ```
 
-The official images are published to GitHub Container Registry:
+### Local Testing
+
 ```bash
-docker pull ghcr.io/obezpalko/helm-s3-exporter:latest
+# Run locally
+export CONFIG_FILE=examples/config-single.yaml
+go run cmd/exporter/main.go
+
+# Or with environment variables
+export INDEX_URL=https://charts.bitnami.com/bitnami/index.yaml
+export SCAN_INTERVAL=1m
+go run cmd/exporter/main.go
 ```
 
-### Project Structure
-
-```
-helm-s3-exporter/
-├── cmd/
-│   └── exporter/          # Main application entry point
-├── internal/
-│   ├── s3/                # S3 client implementation
-│   ├── analyzer/          # Chart analysis logic
-│   ├── metrics/           # Prometheus metrics
-│   └── web/               # HTML dashboard
-├── pkg/
-│   └── config/            # Configuration management
-├── charts/
-│   └── helm-s3-exporter/  # Helm chart
-├── Dockerfile             # Container image definition
-└── Makefile              # Build automation
-```
-
-## Monitoring and Alerting
-
-### Example Prometheus Rules
-
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:
-  name: helm-s3-exporter-alerts
-spec:
-  groups:
-  - name: helm-s3-exporter
-    interval: 30s
-    rules:
-    - alert: HelmS3ExporterDown
-      expr: up{job="helm-s3-exporter"} == 0
-      for: 5m
-      labels:
-        severity: critical
-      annotations:
-        summary: "Helm S3 Exporter is down"
-    
-    - alert: HelmS3ScrapeErrors
-      expr: rate(helm_s3_scrape_errors_total[5m]) > 0
-      for: 10m
-      labels:
-        severity: warning
-      annotations:
-        summary: "Helm S3 Exporter is experiencing scrape errors"
-    
-    - alert: StaleHelmCharts
-      expr: (time() - helm_s3_chart_age_newest_seconds) > 86400 * 90
-      for: 1h
-      labels:
-        severity: info
-      annotations:
-        summary: "Chart {{ $labels.chart }} hasn't been updated in 90 days"
-```
-
-### Example Grafana Dashboard
-
-Query examples:
-
-```promql
-# Total charts
-helm_s3_charts_total
-
-# Chart versions
-helm_s3_chart_versions
-
-# Scrape duration
-rate(helm_s3_scrape_duration_seconds_sum[5m]) / rate(helm_s3_scrape_duration_seconds_count[5m])
-
-# Age of newest chart (in days)
-(time() - helm_s3_chart_age_newest_seconds{chart="your-chart"}) / 86400
-```
+Access metrics at http://localhost:9571/metrics
 
 ## Troubleshooting
 
-### Exporter Can't Access S3
+### Common Issues
 
-1. **Check IAM permissions**:
+#### "failed to read config file"
+
+**Solution**: Verify the secret/configmap exists and is mounted correctly:
+
 ```bash
-kubectl logs -l app.kubernetes.io/name=helm-s3-exporter
+kubectl get secret helm-repo-config -n monitoring
+kubectl describe pod <pod-name> -n monitoring
 ```
 
-2. **Verify service account annotations** (for IRSA):
+#### "403 Forbidden" or "401 Unauthorized"
+
+**Solution**: Check authentication credentials:
+
 ```bash
-kubectl describe sa helm-s3-exporter
+# Test manually
+curl -u username:password https://charts.example.com/index.yaml
+curl -H "Authorization: Bearer token" https://charts.example.com/index.yaml
 ```
 
-3. **Test S3 access** from pod:
-```bash
-kubectl exec -it deploy/helm-s3-exporter -- sh
-# (won't work with distroless, use debug container)
+#### High memory usage
+
+**Solution**: Increase scan interval or add resource limits:
+
+```yaml
+scan:
+  interval: 15m
+
+resources:
+  limits:
+    memory: 256Mi
 ```
 
-### No Metrics Appearing
+### Viewing Logs
 
-1. **Check if exporter is scraping**:
 ```bash
-kubectl logs -l app.kubernetes.io/name=helm-s3-exporter
+# Check logs
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+
+# Follow logs
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter -f
 ```
 
-2. **Verify ServiceMonitor** (if using Prometheus Operator):
-```bash
-kubectl get servicemonitor
-kubectl describe servicemonitor helm-s3-exporter
+## Architecture
+
 ```
-
-3. **Check Prometheus targets**:
-Visit Prometheus UI → Status → Targets
-
-### HTML Dashboard Not Working
-
-Ensure HTML is enabled:
-```bash
-kubectl port-forward svc/helm-s3-exporter 9571:9571
-curl http://localhost:9571/charts
+┌─────────────────────────────────────────────┐
+│           Helm S3 Exporter                  │
+│                                             │
+│  ┌────────────────────────────────────┐   │
+│  │      Config Loader                 │   │
+│  │  (Secret/ConfigMap/Inline)         │   │
+│  └────────────────────────────────────┘   │
+│                  │                         │
+│  ┌───────────────┴────────────────────┐   │
+│  │     HTTP Fetcher (Multi-Repo)      │   │
+│  │  - Basic Auth                      │   │
+│  │  - Bearer Token                    │   │
+│  │  - Custom Headers                  │   │
+│  └───────────────┬────────────────────┘   │
+│                  │                         │
+│  ┌───────────────┴────────────────────┐   │
+│  │      Index.yaml Parser             │   │
+│  └───────────────┬────────────────────┘   │
+│                  │                         │
+│  ┌───────────────┴────────────────────┐   │
+│  │     Chart Analyzer                 │   │
+│  └───────────────┬────────────────────┘   │
+│                  │                         │
+│  ┌───────────────┴────────────────────┐   │
+│  │  Prometheus Metrics Exporter       │   │
+│  │  Optional HTML Dashboard           │   │
+│  └────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘
+               │
+               ▼
+        Prometheus Server
 ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## References
+## Credits
 
-- [Helm S3 Plugin](https://github.com/hypnoglow/helm-s3)
-- [Prometheus Exporters](https://prometheus.io/docs/instrumenting/exporters/)
-- [AWS IAM Roles for Service Accounts](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)
+Developed by [@obezpalko](https://github.com/obezpalko)
 
 ## Support
 
-For issues, questions, or contributions, please visit:
-- GitHub Issues: https://github.com/obezpalko/helm-s3-exporter/issues
-- GitHub Discussions: https://github.com/obezpalko/helm-s3-exporter/discussions
+- 📖 [Documentation](examples/CONFIGURATION_GUIDE.md)
+- 🐛 [Issue Tracker](https://github.com/obezpalko/helm-s3-exporter/issues)
+- 💬 [Discussions](https://github.com/obezpalko/helm-s3-exporter/discussions)

@@ -1,0 +1,21 @@
+{{- if .Values.config.inline.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "helm-s3-exporter.fullname" . }}-config
+  labels:
+    {{- include "helm-s3-exporter.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    repositories:
+      - name: default
+        url: {{ .Values.config.inline.url | quote }}
+    
+    scanInterval: {{ .Values.scan.interval }}
+    scanTimeout: {{ .Values.scan.timeout }}
+    metricsPort: {{ .Values.metrics.port | quote }}
+    metricsPath: {{ .Values.metrics.path | quote }}
+    enableHTML: {{ .Values.html.enabled }}
+    htmlPath: {{ .Values.html.path | quote }}
+{{- end }}
+

@@ -1,0 +1,16 @@
+# Simple deployment with a single repository URL
+
+config:
+  inline:
+    enabled: true
+    url: "https://charts.bitnami.com/bitnami/index.yaml"
+
+scan:
+  interval: "5m"
+
+serviceMonitor:
+  enabled: false
+
+html:
+  enabled: true
+
