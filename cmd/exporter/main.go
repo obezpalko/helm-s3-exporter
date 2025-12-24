@@ -174,20 +174,21 @@ func main() {
 // performScrape scrapes all repositories (used for initial scrape)
 func performScrape(ctx context.Context, clients []*fetcher.Client, metricsCollector *metrics.Metrics, htmlGenerator *web.HTMLGenerator) {
 	log.Println("Starting initial scrape...")
-	startTime := time.Now()
+	overallStartTime := time.Now()
 
-	// Aggregate analysis from all repositories
+	// Aggregate analysis from all repositories for HTML dashboard
 	var totalAnalysis *analyzer.ChartAnalysis
 
 	for _, client := range clients {
 		repoName := client.RepositoryName()
 		log.Printf("  Fetching from repository: %s", repoName)
+		startTime := time.Now()
 
 		// Fetch index.yaml
 		data, err := client.GetIndexYAML(ctx)
 		if err != nil {
 			log.Printf("  ERROR: Failed to fetch index.yaml from %s: %v", repoName, err)
-			metricsCollector.RecordError()
+			metricsCollector.RecordError(repoName)
 			continue
 		}
 
@@ -195,15 +196,21 @@ func performScrape(ctx context.Context, clients []*fetcher.Client, metricsCollec
 		index, err := analyzer.ParseIndex(data)
 		if err != nil {
 			log.Printf("  ERROR: Failed to parse index.yaml from %s: %v", repoName, err)
-			metricsCollector.RecordError()
+			metricsCollector.RecordError(repoName)
 			continue
 		}
 
 		// Analyze charts
 		analysis := analyzer.AnalyzeCharts(index)
-		log.Printf("  Repository %s: %d charts, %d versions", repoName, analysis.TotalCharts, analysis.TotalVersions)
+		duration := time.Since(startTime)
+		log.Printf("  Repository %s: %d charts, %d versions (in %v)", repoName, analysis.TotalCharts, analysis.TotalVersions, duration)
 
-		// Merge with total analysis
+		// Update per-repository metrics
+		metricsCollector.Update(repoName, analysis)
+		metricsCollector.RecordSuccess(repoName)
+		metricsCollector.ScrapeDuration.WithLabelValues(repoName).Observe(duration.Seconds())
+
+		// Merge with total analysis for HTML dashboard
 		if totalAnalysis == nil {
 			totalAnalysis = analysis
 		} else {
@@ -213,24 +220,16 @@ func performScrape(ctx context.Context, clients []*fetcher.Client, metricsCollec
 
 	if totalAnalysis == nil {
 		log.Println("ERROR: No successful scrapes")
-		metricsCollector.RecordError()
-		metricsCollector.ScrapeDuration.Observe(time.Since(startTime).Seconds())
 		return
 	}
 
-	// Update metrics
-	metricsCollector.Update(totalAnalysis)
-	metricsCollector.RecordSuccess()
-
-	// Update HTML dashboard if enabled
+	// Update HTML dashboard with aggregated data if enabled
 	if htmlGenerator != nil {
 		htmlGenerator.Update(totalAnalysis)
 	}
 
-	duration := time.Since(startTime)
-	metricsCollector.ScrapeDuration.Observe(duration.Seconds())
-
-	log.Printf("Initial scrape completed in %v", duration)
+	overallDuration := time.Since(overallStartTime)
+	log.Printf("Initial scrape completed in %v", overallDuration)
 	log.Printf("  Total charts: %d", totalAnalysis.TotalCharts)
 	log.Printf("  Total versions: %d", totalAnalysis.TotalVersions)
 	if !totalAnalysis.OldestChartDate.IsZero() {
@@ -241,7 +240,7 @@ func performScrape(ctx context.Context, clients []*fetcher.Client, metricsCollec
 	}
 }
 
-// performSingleRepoScrape scrapes a single repository and updates aggregate metrics
+// performSingleRepoScrape scrapes a single repository and updates its metrics
 func performSingleRepoScrape(ctx context.Context, client *fetcher.Client, metricsCollector *metrics.Metrics, htmlGenerator *web.HTMLGenerator) {
 	repoName := client.RepositoryName()
 	log.Printf("Scraping repository: %s", repoName)
@@ -251,7 +250,7 @@ func performSingleRepoScrape(ctx context.Context, client *fetcher.Client, metric
 	data, err := client.GetIndexYAML(ctx)
 	if err != nil {
 		log.Printf("ERROR: Failed to fetch index.yaml from %s: %v", repoName, err)
-		metricsCollector.RecordError()
+		metricsCollector.RecordError(repoName)
 		return
 	}
 
@@ -259,7 +258,7 @@ func performSingleRepoScrape(ctx context.Context, client *fetcher.Client, metric
 	index, err := analyzer.ParseIndex(data)
 	if err != nil {
 		log.Printf("ERROR: Failed to parse index.yaml from %s: %v", repoName, err)
-		metricsCollector.RecordError()
+		metricsCollector.RecordError(repoName)
 		return
 	}
 
@@ -268,13 +267,14 @@ func performSingleRepoScrape(ctx context.Context, client *fetcher.Client, metric
 	duration := time.Since(startTime)
 	log.Printf("Repository %s scraped in %v: %d charts, %d versions", repoName, duration, analysis.TotalCharts, analysis.TotalVersions)
 
-	// For now, we update with just this repo's data
-	// In a more advanced version, we could maintain per-repo state and aggregate
-	metricsCollector.Update(analysis)
-	metricsCollector.RecordSuccess()
-	metricsCollector.ScrapeDuration.Observe(duration.Seconds())
+	// Update per-repository metrics
+	metricsCollector.Update(repoName, analysis)
+	metricsCollector.RecordSuccess(repoName)
+	metricsCollector.ScrapeDuration.WithLabelValues(repoName).Observe(duration.Seconds())
 
-	// Update HTML dashboard if enabled
+	// Update HTML dashboard with this repo's data if enabled
+	// Note: This will overwrite previous data in the HTML dashboard
+	// For multiple repos, the dashboard will show the last scraped repo
 	if htmlGenerator != nil {
 		htmlGenerator.Update(analysis)
 	}

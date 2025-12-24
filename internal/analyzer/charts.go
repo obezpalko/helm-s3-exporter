@@ -22,6 +22,7 @@ type ChartVersionInfo struct {
 	Description string    `yaml:"description"`
 	Icon        string    `yaml:"icon"`
 	Created     time.Time `yaml:"created"`
+	URLs        []string  `yaml:"urls"`
 }
 
 // ChartAnalysis contains analyzed information about charts
@@ -36,14 +37,22 @@ type ChartAnalysis struct {
 
 // ChartInfo contains information about a single chart
 type ChartInfo struct {
-	Name          string
-	VersionCount  int
-	Versions      []string
-	OldestVersion time.Time
-	NewestVersion time.Time
-	MedianVersion time.Time
-	Icon          string
-	Description   string
+	Name           string
+	VersionCount   int
+	Versions       []string
+	VersionDetails []VersionDetail
+	OldestVersion  time.Time
+	NewestVersion  time.Time
+	MedianVersion  time.Time
+	Icon           string
+	Description    string
+}
+
+// VersionDetail contains detailed information about a chart version
+type VersionDetail struct {
+	Version string
+	Created time.Time
+	URL     string
 }
 
 // ParseIndex parses the Helm index.yaml content
@@ -70,15 +79,28 @@ func AnalyzeCharts(index *HelmIndex) *ChartAnalysis {
 		}
 
 		chartInfo := ChartInfo{
-			Name:         chartName,
-			VersionCount: len(versions),
-			Versions:     make([]string, 0, len(versions)),
+			Name:           chartName,
+			VersionCount:   len(versions),
+			Versions:       make([]string, 0, len(versions)),
+			VersionDetails: make([]VersionDetail, 0, len(versions)),
 		}
 
 		var dates []time.Time
 		for _, version := range versions {
 			analysis.TotalVersions++
 			chartInfo.Versions = append(chartInfo.Versions, version.Version)
+
+			// Get the first URL if available
+			url := ""
+			if len(version.URLs) > 0 {
+				url = version.URLs[0]
+			}
+
+			chartInfo.VersionDetails = append(chartInfo.VersionDetails, VersionDetail{
+				Version: version.Version,
+				Created: version.Created,
+				URL:     url,
+			})
 
 			if !version.Created.IsZero() {
 				dates = append(dates, version.Created)

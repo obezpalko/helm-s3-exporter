@@ -249,39 +249,58 @@ See [examples/CONFIGURATION_GUIDE.md](examples/CONFIGURATION_GUIDE.md) for compr
 
 ### Available Metrics
 
+All metrics include a `repository` label to filter by specific repositories.
+
 | Metric | Type | Description | Labels |
 |--------|------|-------------|--------|
-| `helm_s3_charts_total` | Gauge | Total number of unique charts | - |
-| `helm_s3_chart_versions_total` | Gauge | Total number of chart versions across all charts | - |
-| `helm_s3_chart_info` | Gauge | Information about each chart | `chart_name`, `latest_version`, `app_version`, `description` |
-| `helm_s3_chart_version_count` | Gauge | Number of versions for each chart | `chart_name` |
-| `helm_s3_chart_latest_timestamp` | Gauge | Unix timestamp of the latest chart version | `chart_name` |
-| `helm_s3_chart_oldest_timestamp` | Gauge | Unix timestamp of the oldest chart version | `chart_name` |
-| `helm_s3_scrape_duration_seconds` | Gauge | Duration of the last scrape in seconds | - |
-| `helm_s3_scrape_errors_total` | Counter | Total number of scrape errors | - |
-| `helm_s3_scrape_success_total` | Counter | Total number of successful scrapes | - |
-| `helm_s3_repository_oldest_chart_timestamp` | Gauge | Unix timestamp of the oldest chart in the repository | - |
-| `helm_s3_repository_newest_chart_timestamp` | Gauge | Unix timestamp of the newest chart in the repository | - |
-| `helm_s3_repository_median_chart_age_days` | Gauge | Median age of charts in days | - |
+| `helm_s3_charts_total` | Gauge | Total number of unique charts | `repository` |
+| `helm_s3_versions_total` | Gauge | Total number of chart versions | `repository` |
+| `helm_s3_chart_versions` | Gauge | Number of versions for each chart | `repository`, `chart` |
+| `helm_s3_chart_age_oldest_seconds` | Gauge | Unix timestamp of the oldest version | `repository`, `chart` |
+| `helm_s3_chart_age_newest_seconds` | Gauge | Unix timestamp of the newest version | `repository`, `chart` |
+| `helm_s3_chart_age_median_seconds` | Gauge | Unix timestamp of the median version | `repository`, `chart` |
+| `helm_s3_overall_age_oldest_seconds` | Gauge | Unix timestamp of the oldest chart in the repository | `repository` |
+| `helm_s3_overall_age_newest_seconds` | Gauge | Unix timestamp of the newest chart in the repository | `repository` |
+| `helm_s3_overall_age_median_seconds` | Gauge | Unix timestamp of the median chart in the repository | `repository` |
+| `helm_s3_scrape_duration_seconds` | Histogram | Duration of the scrape operation | `repository` |
+| `helm_s3_scrape_errors_total` | Counter | Total number of scrape errors | `repository` |
+| `helm_s3_last_scrape_success` | Gauge | Unix timestamp of the last successful scrape | `repository` |
 
 ### Example Queries
 
 ```promql
-# Total number of charts
+# Total number of charts across all repositories
+sum(helm_s3_charts_total)
+
+# Total charts per repository
 helm_s3_charts_total
 
-# Charts with more than 10 versions
-helm_s3_chart_version_count > 10
+# Total charts in production repository
+helm_s3_charts_total{repository="production"}
 
-# Age of the newest chart in hours
-(time() - helm_s3_repository_newest_chart_timestamp) / 3600
+# Charts with more than 10 versions in bitnami repository
+helm_s3_chart_versions{repository="bitnami"} > 10
 
-# Scrape success rate
-rate(helm_s3_scrape_success_total[5m]) / 
-(rate(helm_s3_scrape_success_total[5m]) + rate(helm_s3_scrape_errors_total[5m]))
+# Total charts across specific repositories
+sum(helm_s3_charts_total{repository=~"production|staging"})
 
-# Chart that hasn't been updated in 90 days
-(time() - helm_s3_chart_latest_timestamp) / 86400 > 90
+# Age of the newest chart in hours for a specific repository
+(time() - helm_s3_overall_age_newest_seconds{repository="production"}) / 3600
+
+# Scrape duration per repository
+helm_s3_scrape_duration_seconds_sum{repository="bitnami"} / helm_s3_scrape_duration_seconds_count{repository="bitnami"}
+
+# Scrape error rate per repository
+rate(helm_s3_scrape_errors_total{repository="production"}[5m])
+
+# Charts that haven't been updated in 90 days
+(time() - helm_s3_chart_age_newest_seconds) / 86400 > 90
+
+# Compare chart counts across repositories
+sum by (repository) (helm_s3_chart_versions)
+
+# Find repositories with scrape errors
+sum by (repository) (increase(helm_s3_scrape_errors_total[1h])) > 0
 ```
 
 ## Helm Chart Values
