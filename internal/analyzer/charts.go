@@ -38,6 +38,7 @@ type ChartAnalysis struct {
 // ChartInfo contains information about a single chart
 type ChartInfo struct {
 	Name           string
+	Repository     string
 	VersionCount   int
 	Versions       []string
 	VersionDetails []VersionDetail
@@ -66,6 +67,11 @@ func ParseIndex(data []byte) (*HelmIndex, error) {
 
 // AnalyzeCharts performs analysis on the Helm index
 func AnalyzeCharts(index *HelmIndex) *ChartAnalysis {
+	return AnalyzeChartsWithRepo(index, "")
+}
+
+// AnalyzeChartsWithRepo performs analysis on the Helm index with repository name
+func AnalyzeChartsWithRepo(index *HelmIndex, repository string) *ChartAnalysis {
 	analysis := &ChartAnalysis{
 		TotalCharts: len(index.Entries),
 		ChartsInfo:  make([]ChartInfo, 0, len(index.Entries)),
@@ -80,6 +86,7 @@ func AnalyzeCharts(index *HelmIndex) *ChartAnalysis {
 
 		chartInfo := ChartInfo{
 			Name:           chartName,
+			Repository:     repository,
 			VersionCount:   len(versions),
 			Versions:       make([]string, 0, len(versions)),
 			VersionDetails: make([]VersionDetail, 0, len(versions)),

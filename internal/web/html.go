@@ -334,6 +334,12 @@ const htmlTemplate = `<!DOCTYPE html>
 
         <div class="filters">
             <div class="filter-group">
+                <label class="filter-label" for="repoFilter">Filter by Repository</label>
+                <select id="repoFilter" class="filter-input">
+                    <option value="">All Repositories</option>
+                </select>
+            </div>
+            <div class="filter-group">
                 <label class="filter-label" for="chartFilter">Filter by Chart Name</label>
                 <input type="text" id="chartFilter" class="filter-input" placeholder="Type to filter charts...">
             </div>
@@ -346,13 +352,18 @@ const htmlTemplate = `<!DOCTYPE html>
             <h2 style="margin-bottom: 20px; color: #2d3748;">📦 Available Charts</h2>
             <div class="charts-grid" id="chartsGrid">
                 {{range .Analysis.ChartsInfo}}
-                <div class="chart-item" data-chart-name="{{.Name}}">
+                <div class="chart-item" data-chart-name="{{.Name}}" data-repository="{{.Repository}}">
                     <div class="chart-header">
                         <div class="chart-title-section">
                             {{if .Icon}}
                             <img src="{{.Icon}}" alt="{{.Name}}" class="chart-icon" onerror="this.style.display='none'">
                             {{end}}
-                            <div class="chart-name">{{.Name}}</div>
+                            <div>
+                                <div class="chart-name">{{.Name}}</div>
+                                {{if .Repository}}
+                                <div style="font-size: 12px; color: #667eea; font-weight: 600; margin-top: 2px;">📁 {{.Repository}}</div>
+                                {{end}}
+                            </div>
                         </div>
                     </div>
                     {{if .Description}}
@@ -414,21 +425,44 @@ const htmlTemplate = `<!DOCTYPE html>
         }
 
         // Filter functionality
+        const repoFilter = document.getElementById('repoFilter');
         const chartFilter = document.getElementById('chartFilter');
         const chartsGrid = document.getElementById('chartsGrid');
         const noResults = document.getElementById('noResults');
         const visibleCount = document.getElementById('visibleCount');
         const chartItems = document.querySelectorAll('.chart-item');
 
+        // Populate repository dropdown
+        const repositories = new Set();
+        chartItems.forEach(item => {
+            const repo = item.dataset.repository;
+            if (repo) {
+                repositories.add(repo);
+            }
+        });
+        
+        // Sort repositories alphabetically
+        const sortedRepos = Array.from(repositories).sort();
+        sortedRepos.forEach(repo => {
+            const option = document.createElement('option');
+            option.value = repo;
+            option.textContent = repo;
+            repoFilter.appendChild(option);
+        });
+
         function filterCharts() {
+            const repoQuery = repoFilter.value.toLowerCase();
             const chartQuery = chartFilter.value.toLowerCase();
             let visible = 0;
 
             chartItems.forEach(item => {
                 const chartName = item.dataset.chartName.toLowerCase();
-                const matches = chartName.includes(chartQuery);
+                const repository = item.dataset.repository.toLowerCase();
+                
+                const repoMatches = !repoQuery || repository === repoQuery;
+                const chartMatches = !chartQuery || chartName.includes(chartQuery);
 
-                if (matches) {
+                if (repoMatches && chartMatches) {
                     item.classList.remove('hidden');
                     visible++;
                 } else {
@@ -447,6 +481,7 @@ const htmlTemplate = `<!DOCTYPE html>
             }
         }
 
+        repoFilter.addEventListener('change', filterCharts);
         chartFilter.addEventListener('input', filterCharts);
 
         // Keyboard shortcuts

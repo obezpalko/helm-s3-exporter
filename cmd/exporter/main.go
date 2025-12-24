@@ -200,8 +200,8 @@ func performScrape(ctx context.Context, clients []*fetcher.Client, metricsCollec
 			continue
 		}
 
-		// Analyze charts
-		analysis := analyzer.AnalyzeCharts(index)
+		// Analyze charts with repository name
+		analysis := analyzer.AnalyzeChartsWithRepo(index, repoName)
 		duration := time.Since(startTime)
 		log.Printf("  Repository %s: %d charts, %d versions (in %v)", repoName, analysis.TotalCharts, analysis.TotalVersions, duration)
 
@@ -262,8 +262,8 @@ func performSingleRepoScrape(ctx context.Context, client *fetcher.Client, metric
 		return
 	}
 
-	// Analyze charts
-	analysis := analyzer.AnalyzeCharts(index)
+	// Analyze charts with repository name
+	analysis := analyzer.AnalyzeChartsWithRepo(index, repoName)
 	duration := time.Since(startTime)
 	log.Printf("Repository %s scraped in %v: %d charts, %d versions", repoName, duration, analysis.TotalCharts, analysis.TotalVersions)
 
