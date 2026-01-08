@@ -116,5 +116,5 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Lint Helm chart
-      run: helm lint charts/helm-s3-exporter
+      run: helm lint charts/helm-repo-exporter
 
