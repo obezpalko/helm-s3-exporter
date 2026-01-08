@@ -2,21 +2,21 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ include "helm-s3-exporter.fullname" . }}
+  name: {{ include "helm-repo-exporter.fullname" . }}
   {{- if .Values.serviceMonitor.namespace }}
   namespace: {{ .Values.serviceMonitor.namespace }}
   {{- else }}
   namespace: {{ .Release.Namespace }}
   {{- end }}
   labels:
-    {{- include "helm-s3-exporter.labels" . | nindent 4 }}
+    {{- include "helm-repo-exporter.labels" . | nindent 4 }}
     {{- with .Values.serviceMonitor.additionalLabels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
   selector:
     matchLabels:
-      {{- include "helm-s3-exporter.selectorLabels" . | nindent 6 }}
+      {{- include "helm-repo-exporter.selectorLabels" . | nindent 6 }}
   endpoints:
   - port: http
     path: {{ .Values.metrics.path }}

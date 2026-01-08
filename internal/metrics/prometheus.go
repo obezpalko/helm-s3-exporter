@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"github.com/obezpalko/helm-s3-exporter/internal/analyzer"
+	"github.com/obezpalko/helm-repo-exporter/internal/analyzer"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -26,52 +26,52 @@ type Metrics struct {
 func NewMetrics() *Metrics {
 	return &Metrics{
 		ChartsTotal: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_charts_total",
+			Name: "helm_repo_charts_total",
 			Help: "Total number of distinct Helm charts in the repository",
 		}, []string{"repository"}),
 		ChartVersions: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_chart_versions",
+			Name: "helm_repo_chart_versions",
 			Help: "Number of versions for each Helm chart",
 		}, []string{"repository", "chart"}),
 		ChartAgeOldest: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_chart_age_oldest_seconds",
+			Name: "helm_repo_chart_age_oldest_seconds",
 			Help: "Timestamp of the oldest version of each chart",
 		}, []string{"repository", "chart"}),
 		ChartAgeNewest: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_chart_age_newest_seconds",
+			Name: "helm_repo_chart_age_newest_seconds",
 			Help: "Timestamp of the newest version of each chart",
 		}, []string{"repository", "chart"}),
 		ChartAgeMedian: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_chart_age_median_seconds",
+			Name: "helm_repo_chart_age_median_seconds",
 			Help: "Timestamp of the median version of each chart",
 		}, []string{"repository", "chart"}),
 		OverallAgeOldest: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_overall_age_oldest_seconds",
+			Name: "helm_repo_overall_age_oldest_seconds",
 			Help: "Timestamp of the oldest chart version in the repository",
 		}, []string{"repository"}),
 		OverallAgeNewest: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_overall_age_newest_seconds",
+			Name: "helm_repo_overall_age_newest_seconds",
 			Help: "Timestamp of the newest chart version in the repository",
 		}, []string{"repository"}),
 		OverallAgeMedian: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_overall_age_median_seconds",
+			Name: "helm_repo_overall_age_median_seconds",
 			Help: "Timestamp of the median chart version in the repository",
 		}, []string{"repository"}),
 		TotalVersions: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_versions_total",
+			Name: "helm_repo_versions_total",
 			Help: "Total number of chart versions in the repository",
 		}, []string{"repository"}),
 		ScrapeDuration: promauto.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "helm_s3_scrape_duration_seconds",
+			Name:    "helm_repo_scrape_duration_seconds",
 			Help:    "Duration of the repository scrape operation in seconds",
 			Buckets: prometheus.DefBuckets,
 		}, []string{"repository"}),
 		ScrapeErrors: promauto.NewCounterVec(prometheus.CounterOpts{
-			Name: "helm_s3_scrape_errors_total",
+			Name: "helm_repo_scrape_errors_total",
 			Help: "Total number of scrape errors per repository",
 		}, []string{"repository"}),
 		LastScrapeSuccess: promauto.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "helm_s3_last_scrape_success",
+			Name: "helm_repo_last_scrape_success",
 			Help: "Timestamp of the last successful scrape per repository",
 		}, []string{"repository"}),
 	}

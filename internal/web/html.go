@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/obezpalko/helm-s3-exporter/internal/analyzer"
+	"github.com/obezpalko/helm-repo-exporter/internal/analyzer"
 )
 
 // HTMLGenerator generates HTML dashboard for charts

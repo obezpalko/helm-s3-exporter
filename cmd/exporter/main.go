@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/obezpalko/helm-s3-exporter/internal/analyzer"
-	"github.com/obezpalko/helm-s3-exporter/internal/fetcher"
-	"github.com/obezpalko/helm-s3-exporter/internal/metrics"
-	"github.com/obezpalko/helm-s3-exporter/internal/web"
-	"github.com/obezpalko/helm-s3-exporter/pkg/config"
+	"github.com/obezpalko/helm-repo-exporter/internal/analyzer"
+	"github.com/obezpalko/helm-repo-exporter/internal/fetcher"
+	"github.com/obezpalko/helm-repo-exporter/internal/metrics"
+	"github.com/obezpalko/helm-repo-exporter/internal/web"
+	"github.com/obezpalko/helm-repo-exporter/pkg/config"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 

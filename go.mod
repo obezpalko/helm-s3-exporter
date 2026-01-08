@@ -1,4 +1,4 @@
-module github.com/obezpalko/helm-s3-exporter
+module github.com/obezpalko/helm-repo-exporter
 
 go 1.21
 

@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "helm-s3-exporter.name" -}}
+{{- define "helm-repo-exporter.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "helm-s3-exporter.fullname" -}}
+{{- define "helm-repo-exporter.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,16 +24,16 @@ Create a default fully qualified app name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "helm-s3-exporter.chart" -}}
+{{- define "helm-repo-exporter.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "helm-s3-exporter.labels" -}}
-helm.sh/chart: {{ include "helm-s3-exporter.chart" . }}
-{{ include "helm-s3-exporter.selectorLabels" . }}
+{{- define "helm-repo-exporter.labels" -}}
+helm.sh/chart: {{ include "helm-repo-exporter.chart" . }}
+{{ include "helm-repo-exporter.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -43,17 +43,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "helm-s3-exporter.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "helm-s3-exporter.name" . }}
+{{- define "helm-repo-exporter.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "helm-repo-exporter.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "helm-s3-exporter.serviceAccountName" -}}
+{{- define "helm-repo-exporter.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "helm-s3-exporter.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "helm-repo-exporter.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

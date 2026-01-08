@@ -23,7 +23,7 @@ The easiest way to get started with IRSA:
 ```bash
 # 1. Edit values-simple.yaml with your bucket and role ARN
 # 2. Install
-helm install helm-s3-exporter ../charts/helm-s3-exporter \
+helm install helm-repo-exporter ../charts/helm-repo-exporter \
   -f values-simple.yaml \
   --namespace monitoring \
   --create-namespace
@@ -34,7 +34,7 @@ helm install helm-s3-exporter ../charts/helm-s3-exporter \
 For a full-featured production deployment:
 
 ```bash
-helm install helm-s3-exporter ../charts/helm-s3-exporter \
+helm install helm-repo-exporter ../charts/helm-repo-exporter \
   -f values-eks-irsa.yaml \
   --namespace monitoring \
   --create-namespace
@@ -52,7 +52,7 @@ kubectl create secret generic aws-credentials \
   --namespace monitoring
 
 # Install
-helm install helm-s3-exporter ../charts/helm-s3-exporter \
+helm install helm-repo-exporter ../charts/helm-repo-exporter \
   -f values-static-credentials.yaml \
   --namespace monitoring
 ```
@@ -78,7 +78,7 @@ kubectl apply -f prometheus-rules.yaml -n monitoring
 1. Create IAM policy using `aws-iam-policy.json`:
 ```bash
 aws iam create-policy \
-  --policy-name helm-s3-exporter-policy \
+  --policy-name helm-repo-exporter-policy \
   --policy-document file://aws-iam-policy.json
 ```
 
@@ -87,17 +87,17 @@ aws iam create-policy \
 eksctl create iamserviceaccount \
   --cluster=my-cluster \
   --namespace=monitoring \
-  --name=helm-s3-exporter \
-  --attach-policy-arn=arn:aws:iam::ACCOUNT:policy/helm-s3-exporter-policy \
+  --name=helm-repo-exporter \
+  --attach-policy-arn=arn:aws:iam::ACCOUNT:policy/helm-repo-exporter-policy \
   --approve
 ```
 
 3. Install with the created service account:
 ```bash
-helm install helm-s3-exporter ../charts/helm-s3-exporter \
+helm install helm-repo-exporter ../charts/helm-repo-exporter \
   --set s3.bucket=my-bucket \
   --set serviceAccount.create=false \
-  --set serviceAccount.name=helm-s3-exporter
+  --set serviceAccount.name=helm-repo-exporter
 ```
 
 ### Option 3: Let Helm create the service account
@@ -107,7 +107,7 @@ Simply specify the role ARN in values:
 ```yaml
 serviceAccount:
   create: true
-  roleArn: "arn:aws:iam::123456789012:role/helm-s3-exporter-role"
+  roleArn: "arn:aws:iam::123456789012:role/helm-repo-exporter-role"
 ```
 
 The `eks.amazonaws.com/role-arn` annotation will be added automatically!
@@ -128,7 +128,7 @@ vim my-values.yaml
 
 3. **Installing with your values**:
 ```bash
-helm install helm-s3-exporter ../charts/helm-s3-exporter -f my-values.yaml
+helm install helm-repo-exporter ../charts/helm-repo-exporter -f my-values.yaml
 ```
 
 ## Common Customizations
@@ -179,13 +179,13 @@ Test your values file before installing:
 
 ```bash
 # Dry run
-helm install test ../charts/helm-s3-exporter -f my-values.yaml --dry-run --debug
+helm install test ../charts/helm-repo-exporter -f my-values.yaml --dry-run --debug
 
 # Template rendering
-helm template test ../charts/helm-s3-exporter -f my-values.yaml
+helm template test ../charts/helm-repo-exporter -f my-values.yaml
 
 # Lint
-helm lint ../charts/helm-s3-exporter -f my-values.yaml
+helm lint ../charts/helm-repo-exporter -f my-values.yaml
 ```
 
 ## Troubleshooting
@@ -194,17 +194,17 @@ If you encounter issues:
 
 1. **Check the rendered template**:
 ```bash
-helm template test ../charts/helm-s3-exporter -f my-values.yaml | less
+helm template test ../charts/helm-repo-exporter -f my-values.yaml | less
 ```
 
 2. **Validate ServiceAccount annotation**:
 ```bash
-kubectl get serviceaccount helm-s3-exporter -n monitoring -o yaml
+kubectl get serviceaccount helm-repo-exporter -n monitoring -o yaml
 ```
 
 3. **Check logs**:
 ```bash
-kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter
 ```
 
 ## More Information

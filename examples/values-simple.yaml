@@ -7,7 +7,7 @@ s3:
 
 # Specify your IAM role ARN - the annotation will be added automatically
 serviceAccount:
-  roleArn: "arn:aws:iam::123456789012:role/helm-s3-exporter-role"
+  roleArn: "arn:aws:iam::123456789012:role/helm-repo-exporter-role"
 
 # Optional: Enable features
 serviceMonitor:

@@ -1,97 +1,97 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: helm-s3-exporter-alerts
+  name: helm-repo-exporter-alerts
   namespace: monitoring
   labels:
     prometheus: kube-prometheus
 spec:
   groups:
-  - name: helm-s3-exporter.rules
+  - name: helm-repo-exporter.rules
     interval: 30s
     rules:
     # Alert when exporter is down
-    - alert: HelmS3ExporterDown
-      expr: up{job="helm-s3-exporter"} == 0
+    - alert: HelmRepoExporterDown
+      expr: up{job="helm-repo-exporter"} == 0
       for: 5m
       labels:
         severity: critical
-        component: helm-s3-exporter
+        component: helm-repo-exporter
       annotations:
-        summary: "Helm S3 Exporter is down"
-        description: "Helm S3 Exporter has been down for more than 5 minutes."
+        summary: "Helm Repository Exporter is down"
+        description: "Helm Repository Exporter has been down for more than 5 minutes."
         
     # Alert on scrape errors
-    - alert: HelmS3ScrapeErrors
-      expr: rate(helm_s3_scrape_errors_total[5m]) > 0
+    - alert: HelmRepoScrapeErrors
+      expr: rate(helm_repo_scrape_errors_total[5m]) > 0
       for: 10m
       labels:
         severity: warning
-        component: helm-s3-exporter
+        component: helm-repo-exporter
       annotations:
-        summary: "Helm S3 Exporter is experiencing scrape errors"
-        description: "Helm S3 Exporter has encountered {{ $value }} errors in the last 5 minutes."
+        summary: "Helm Repository Exporter is experiencing scrape errors"
+        description: "Helm Repository Exporter has encountered {{ $value }} errors in the last 5 minutes."
         
     # Alert on slow scrapes
-    - alert: HelmS3SlowScrapes
-      expr: histogram_quantile(0.95, rate(helm_s3_scrape_duration_seconds_bucket[5m])) > 10
+    - alert: HelmRepoSlowScrapes
+      expr: histogram_quantile(0.95, rate(helm_repo_scrape_duration_seconds_bucket[5m])) > 10
       for: 15m
       labels:
         severity: warning
-        component: helm-s3-exporter
+        component: helm-repo-exporter
       annotations:
-        summary: "Helm S3 scrapes are slow"
+        summary: "Helm Repository scrapes are slow"
         description: "95th percentile of scrape duration is {{ $value }}s (threshold: 10s)"
         
     # Alert on stale charts (no updates in 90 days)
     - alert: HelmChartNotUpdated
-      expr: (time() - helm_s3_chart_age_newest_seconds) > (86400 * 90)
+      expr: (time() - helm_repo_chart_age_newest_seconds) > (86400 * 90)
       for: 1h
       labels:
         severity: info
-        component: helm-s3-exporter
+        component: helm-repo-exporter
       annotations:
         summary: "Helm chart {{ $labels.chart }} is stale"
         description: "Chart {{ $labels.chart }} hasn't been updated in {{ $value | humanizeDuration }}"
         
     # Alert on very old charts (no updates in 180 days)
     - alert: HelmChartVeryOld
-      expr: (time() - helm_s3_chart_age_newest_seconds) > (86400 * 180)
+      expr: (time() - helm_repo_chart_age_newest_seconds) > (86400 * 180)
       for: 1h
       labels:
         severity: warning
-        component: helm-s3-exporter
+        component: helm-repo-exporter
       annotations:
         summary: "Helm chart {{ $labels.chart }} is very old"
         description: "Chart {{ $labels.chart }} hasn't been updated in {{ $value | humanizeDuration }}. Consider updating or archiving."
         
     # Alert when last successful scrape is too old
-    - alert: HelmS3StaleData
-      expr: (time() - helm_s3_last_scrape_success) > 600
+    - alert: HelmRepoStaleData
+      expr: (time() - helm_repo_last_scrape_success) > 600
       for: 5m
       labels:
         severity: warning
-        component: helm-s3-exporter
+        component: helm-repo-exporter
       annotations:
-        summary: "Helm S3 Exporter data is stale"
+        summary: "Helm Repository Exporter data is stale"
         description: "Last successful scrape was {{ $value | humanizeDuration }} ago"
 
   # Recording rules for easier querying
-  - name: helm-s3-exporter.recording
+  - name: helm-repo-exporter.recording
     interval: 30s
     rules:
     # Average scrape duration
-    - record: helm_s3:scrape_duration_seconds:avg
-      expr: rate(helm_s3_scrape_duration_seconds_sum[5m]) / rate(helm_s3_scrape_duration_seconds_count[5m])
+    - record: helm_repo:scrape_duration_seconds:avg
+      expr: rate(helm_repo_scrape_duration_seconds_sum[5m]) / rate(helm_repo_scrape_duration_seconds_count[5m])
       
     # Chart age in days
-    - record: helm_s3:chart_age_newest_days
-      expr: (time() - helm_s3_chart_age_newest_seconds) / 86400
+    - record: helm_repo:chart_age_newest_days
+      expr: (time() - helm_repo_chart_age_newest_seconds) / 86400
       
-    - record: helm_s3:chart_age_oldest_days
-      expr: (time() - helm_s3_chart_age_oldest_seconds) / 86400
+    - record: helm_repo:chart_age_oldest_days
+      expr: (time() - helm_repo_chart_age_oldest_seconds) / 86400
       
     # Error rate
-    - record: helm_s3:scrape_errors:rate5m
-      expr: rate(helm_s3_scrape_errors_total[5m])
+    - record: helm_repo:scrape_errors:rate5m
+      expr: rate(helm_repo_scrape_errors_total[5m])
 

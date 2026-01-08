@@ -7,23 +7,23 @@ This project publishes Docker images to GitHub Container Registry (ghcr.io) auto
 ### Latest Version
 
 ```bash
-docker pull ghcr.io/obezpalko/helm-s3-exporter:latest
+docker pull ghcr.io/obezpalko/helm-repo-exporter:latest
 ```
 
 ### Specific Version
 
 ```bash
-docker pull ghcr.io/obezpalko/helm-s3-exporter:v0.1.0
+docker pull ghcr.io/obezpalko/helm-repo-exporter:v0.1.0
 ```
 
 ### Major/Minor Versions
 
 ```bash
 # Pull latest patch version of v0.1.x
-docker pull ghcr.io/obezpalko/helm-s3-exporter:0.1
+docker pull ghcr.io/obezpalko/helm-repo-exporter:0.1
 
 # Pull latest minor version of v0.x.x
-docker pull ghcr.io/obezpalko/helm-s3-exporter:0
+docker pull ghcr.io/obezpalko/helm-repo-exporter:0
 ```
 
 ## Using in Kubernetes
@@ -33,8 +33,9 @@ docker pull ghcr.io/obezpalko/helm-s3-exporter:0
 The Helm chart already uses GHCR by default:
 
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter \
-  --set s3.bucket=my-bucket
+helm install my-exporter ./charts/helm-repo-exporter \
+  --set config.inline.enabled=true \
+  --set config.inline.url=https://charts.example.com/index.yaml
 ```
 
 ### Direct Deployment
@@ -43,27 +44,33 @@ helm install my-exporter ./charts/helm-s3-exporter \
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: helm-s3-exporter
+  name: helm-repo-exporter
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: helm-s3-exporter
+      app: helm-repo-exporter
   template:
     metadata:
       labels:
-        app: helm-s3-exporter
+        app: helm-repo-exporter
     spec:
       containers:
       - name: exporter
-        image: ghcr.io/obezpalko/helm-s3-exporter:latest
+        image: ghcr.io/obezpalko/helm-repo-exporter:latest
         ports:
         - containerPort: 9571
         env:
-        - name: S3_BUCKET
-          value: "my-helm-charts"
-        - name: S3_REGION
-          value: "us-east-1"
+        - name: CONFIG_FILE
+          value: "/config/config.yaml"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: helm-repo-config
 ```
 
 ## Multi-Platform Support
@@ -89,14 +96,11 @@ Docker automatically pulls the correct architecture for your system.
 version: '3.8'
 services:
   exporter:
-    image: ghcr.io/obezpalko/helm-s3-exporter:latest
+    image: ghcr.io/obezpalko/helm-repo-exporter:latest
     ports:
       - "9571:9571"
     environment:
-      - S3_BUCKET=my-helm-charts
-      - S3_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - CONFIG_FILE=/config/config.yaml
 ```
 
 ## For Private Repositories
@@ -148,10 +152,10 @@ Check available tags:
 ```bash
 # Using GitHub API
 curl -H "Authorization: Bearer YOUR_TOKEN" \
-  https://api.github.com/user/packages/container/helm-s3-exporter/versions
+  https://api.github.com/user/packages/container/helm-repo-exporter/versions
 ```
 
-Or visit: https://github.com/obezpalko/helm-s3-exporter/pkgs/container/helm-s3-exporter
+Or visit: https://github.com/obezpalko/helm-repo-exporter/pkgs/container/helm-repo-exporter
 
 ## Troubleshooting
 
@@ -169,7 +173,7 @@ If you're having issues with ARM builds:
 
 ```bash
 # Pull specific platform
-docker pull --platform linux/amd64 ghcr.io/obezpalko/helm-s3-exporter:latest
+docker pull --platform linux/amd64 ghcr.io/obezpalko/helm-repo-exporter:latest
 ```
 
 ## Security

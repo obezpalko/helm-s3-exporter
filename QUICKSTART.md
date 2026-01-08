@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get up and running with Helm S3 Exporter in minutes!
+Get up and running with Helm Repository Exporter in minutes!
 
 ## Installation Options
 
@@ -170,7 +170,7 @@ helm install my-exporter ./charts/helm-s3-exporter \
 # Port forward to Prometheus
 kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090
 
-# Open http://localhost:9090 and search for: helm_s3_charts_total
+# Open http://localhost:9090 and search for: helm_repo_charts_total
 ```
 
 ---
@@ -243,7 +243,7 @@ After installation, verify everything is working:
 - [ ] **Metrics are exposed**
   ```bash
   kubectl port-forward -n monitoring svc/my-exporter 9571:9571
-  curl http://localhost:9571/metrics | grep helm_s3_charts_total
+  curl http://localhost:9571/metrics | grep helm_repo_charts_total
   ```
 
 - [ ] **ServiceMonitor is created** (if enabled)
@@ -336,16 +336,16 @@ helm uninstall my-exporter -n monitoring
 
 ```promql
 # Total charts
-helm_s3_charts_total
+helm_repo_charts_total
 
 # Charts with many versions
-helm_s3_chart_version_count > 10
+helm_repo_chart_version_count > 10
 
 # Scrape errors
-rate(helm_s3_scrape_errors_total[5m])
+rate(helm_repo_scrape_errors_total[5m])
 
 # Scrape duration
-helm_s3_scrape_duration_seconds
+helm_repo_scrape_duration_seconds
 ```
 
 ---

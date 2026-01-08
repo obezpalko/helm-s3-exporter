@@ -36,6 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dropped all Linux capabilities
 - Distroless base image for minimal attack surface
 
-[Unreleased]: https://github.com/obezpalko/helm-s3-exporter/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/obezpalko/helm-s3-exporter/releases/tag/v0.1.0
+[Unreleased]: https://github.com/obezpalko/helm-repo-exporter/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/obezpalko/helm-repo-exporter/releases/tag/v0.1.0
 

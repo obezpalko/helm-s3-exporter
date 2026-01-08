@@ -1,6 +1,6 @@
-# Contributing to Helm S3 Exporter
+# Contributing to Helm Repository Exporter
 
-Thank you for your interest in contributing to Helm S3 Exporter! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Helm Repository Exporter! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 
@@ -57,7 +57,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ```bash
 # Clone the repository
-git clone https://github.com/obezpalko/helm-s3-exporter.git
+git clone https://github.com/obezpalko/helm-repo-exporter.git
 cd helm-s3-exporter
 
 # Install dependencies
@@ -213,8 +213,8 @@ Releases are managed by maintainers:
 
 ## Questions?
 
-- Open a [GitHub Discussion](https://github.com/obezpalko/helm-s3-exporter/discussions)
-- Check existing [Issues](https://github.com/obezpalko/helm-s3-exporter/issues)
+- Open a [GitHub Discussion](https://github.com/obezpalko/helm-repo-exporter/discussions)
+- Check existing [Issues](https://github.com/obezpalko/helm-repo-exporter/issues)
 
 ## License
 

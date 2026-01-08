@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/obezpalko/helm-s3-exporter/pkg/config"
+	"github.com/obezpalko/helm-repo-exporter/pkg/config"
 )
 
 // Client wraps the HTTP client for fetching index.yaml

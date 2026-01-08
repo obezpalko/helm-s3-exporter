@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "helm-s3-exporter.fullname" . }}
+  name: {{ include "helm-repo-exporter.fullname" . }}
   labels:
-    {{- include "helm-s3-exporter.labels" . | nindent 4 }}
+    {{- include "helm-repo-exporter.labels" . | nindent 4 }}
   {{- with .Values.service.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -16,5 +16,5 @@ spec:
     protocol: TCP
     name: http
   selector:
-    {{- include "helm-s3-exporter.selectorLabels" . | nindent 4 }}
+    {{- include "helm-repo-exporter.selectorLabels" . | nindent 4 }}
 

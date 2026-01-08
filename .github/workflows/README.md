@@ -84,13 +84,13 @@ make build
 make lint
 
 # Lint Helm chart
-helm lint charts/helm-s3-exporter
+helm lint charts/helm-repo-exporter
 ```
 
 ### Creating a Release
 
 1. **Update version** in relevant files:
-   - `charts/helm-s3-exporter/Chart.yaml`
+   - `charts/helm-repo-exporter/Chart.yaml`
    - `CHANGELOG.md`
 
 2. **Commit changes**:

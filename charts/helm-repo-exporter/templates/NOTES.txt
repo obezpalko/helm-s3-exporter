@@ -9,18 +9,18 @@ To learn more about the release, try:
 
 📊 Metrics endpoint:
   {{ if contains "NodePort" .Values.service.type -}}
-  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "helm-s3-exporter.fullname" . }})
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "helm-repo-exporter.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
   echo "Metrics available at http://$NODE_IP:$NODE_PORT{{ .Values.metrics.path }}"
   {{- else if contains "LoadBalancer" .Values.service.type }}
   NOTE: It may take a few minutes for the LoadBalancer IP to be available.
-  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "helm-s3-exporter.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "helm-repo-exporter.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
   echo "Metrics available at http://$SERVICE_IP:{{ .Values.service.port }}{{ .Values.metrics.path }}"
   {{- else if contains "ClusterIP" .Values.service.type }}
-  echo "Metrics endpoint: http://{{ include "helm-s3-exporter.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}{{ .Values.metrics.path }}"
+  echo "Metrics endpoint: http://{{ include "helm-repo-exporter.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}{{ .Values.metrics.path }}"
   
   To access metrics locally:
-  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "helm-s3-exporter.fullname" . }} {{ .Values.metrics.port }}:{{ .Values.service.port }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "helm-repo-exporter.fullname" . }} {{ .Values.metrics.port }}:{{ .Values.service.port }}
   {{- end }}
 
 {{- if .Values.html.enabled }}
@@ -28,7 +28,7 @@ To learn more about the release, try:
 🌐 HTML Dashboard:
   {{- if contains "ClusterIP" .Values.service.type }}
   To access the HTML dashboard locally:
-  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "helm-s3-exporter.fullname" . }} {{ .Values.metrics.port }}:{{ .Values.service.port }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "helm-repo-exporter.fullname" . }} {{ .Values.metrics.port }}:{{ .Values.service.port }}
   Then visit: http://localhost:{{ .Values.metrics.port }}{{ .Values.html.path }}
   {{- end }}
 {{- end }}
@@ -51,7 +51,7 @@ To learn more about the release, try:
 {{- end }}
 
 📚 Documentation:
-  Visit https://github.com/obezpalko/helm-s3-exporter for more information.
+  Visit https://github.com/obezpalko/helm-repo-exporter for more information.
 
 {{- if and (not .Values.config.inline.enabled) (not .Values.config.existingSecret.enabled) (not .Values.config.existingConfigMap.enabled) }}
 

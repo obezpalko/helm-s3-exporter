@@ -17,7 +17,7 @@ The Helm S3 Exporter supports multiple repositories with flexible authentication
 For a single public repository, use inline configuration:
 
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --set config.inline.enabled=true \
   --set config.inline.url=https://charts.bitnami.com/bitnami/index.yaml
 ```
@@ -64,7 +64,7 @@ kubectl create secret generic helm-repo-config \
 ### Step 3: Deploy
 
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --namespace monitoring \
   --set config.existingSecret.enabled=true \
   --set config.existingSecret.name=helm-repo-config
@@ -137,7 +137,7 @@ kubectl create configmap helm-repo-config \
   --namespace monitoring
 
 # Deploy
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --namespace monitoring \
   --set config.existingConfigMap.enabled=true \
   --set config.existingConfigMap.name=helm-repo-config
@@ -154,7 +154,7 @@ kubectl create secret generic helm-repo-config \
   --namespace monitoring
 
 # Deploy
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --namespace monitoring \
   --set config.existingSecret.enabled=true \
   --set config.existingSecret.name=helm-repo-config
@@ -175,7 +175,7 @@ kubectl create secret generic helm-repo-config \
 kubectl apply -f sealed-secret.yaml
 
 # Deploy
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --namespace monitoring \
   --set config.existingSecret.enabled=true \
   --set config.existingSecret.name=helm-repo-config
@@ -350,7 +350,7 @@ After deployment, verify the configuration:
 
 ```bash
 # Check logs
-kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter
 
 # You should see:
 # Configuration loaded:

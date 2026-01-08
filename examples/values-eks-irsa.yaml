@@ -14,8 +14,8 @@ auth:
 serviceAccount:
   create: true
   # Specify the IAM role ARN for IRSA
-  roleArn: arn:aws:iam::123456789012:role/helm-s3-exporter-role
-  name: helm-s3-exporter
+  roleArn: arn:aws:iam::123456789012:role/helm-repo-exporter-role
+  name: helm-repo-exporter
 
 # Scanning configuration
 scan:

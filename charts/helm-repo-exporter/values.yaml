@@ -1,9 +1,9 @@
-# Default values for helm-s3-exporter
+# Default values for helm-repo-exporter
 
 replicaCount: 1
 
 image:
-  repository: ghcr.io/obezpalko/helm-s3-exporter
+  repository: ghcr.io/obezpalko/helm-repo-exporter
   pullPolicy: IfNotPresent
   tag: ""  # Overrides the image tag whose default is the chart appVersion
 

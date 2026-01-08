@@ -1,13 +1,13 @@
-# Helm S3 Exporter
+# Helm Repository Exporter
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Go Report Card](https://goreportcard.com/badge/github.com/obezpalko/helm-s3-exporter)](https://goreportcard.com/report/github.com/obezpalko/helm-s3-exporter)
+[![Go Report Card](https://goreportcard.com/badge/github.com/obezpalko/helm-repo-exporter)](https://goreportcard.com/report/github.com/obezpalko/helm-repo-exporter)
 
 A Prometheus exporter for Helm chart repositories. Monitor multiple chart repositories with flexible authentication support.
 
 ## Overview
 
-The Helm S3 Exporter monitors Helm chart repositories by periodically fetching and analyzing their `index.yaml` files. It exposes Prometheus metrics about charts, versions, and repository health.
+The Helm Repository Exporter monitors Helm chart repositories by periodically fetching and analyzing their `index.yaml` files. It exposes Prometheus metrics about charts, versions, and repository health.
 
 ## Features
 
@@ -27,7 +27,7 @@ The Helm S3 Exporter monitors Helm chart repositories by periodically fetching a
 
 ```bash
 # Install with Helm (single public repository)
-helm install helm-s3-exporter ./charts/helm-s3-exporter \
+helm install helm-repo-exporter ./charts/helm-repo-exporter \
   --set config.inline.enabled=true \
   --set config.inline.url=https://charts.bitnami.com/bitnami/index.yaml \
   --namespace monitoring --create-namespace
@@ -58,7 +58,7 @@ kubectl create secret generic helm-repo-config \
   --namespace monitoring
 
 # 3. Install with Helm
-helm install helm-s3-exporter ./charts/helm-s3-exporter \
+helm install helm-repo-exporter ./charts/helm-repo-exporter \
   --set config.existingSecret.enabled=true \
   --set config.existingSecret.name=helm-repo-config \
   --namespace monitoring --create-namespace
@@ -88,7 +88,7 @@ config:
 
 Deploy:
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter -f values.yaml
+helm install my-exporter ./charts/helm-repo-exporter -f values.yaml
 ```
 
 ### Method 2: Secret (Recommended for Private Repos)
@@ -142,7 +142,7 @@ kubectl create secret generic helm-repo-config \
 **Step 3: Deploy**
 
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --namespace monitoring \
   --set config.existingSecret.enabled=true \
   --set config.existingSecret.name=helm-repo-config
@@ -157,7 +157,7 @@ kubectl create configmap helm-repo-config \
   --from-file=config.yaml=config.yaml \
   --namespace monitoring
 
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --namespace monitoring \
   --set config.existingConfigMap.enabled=true \
   --set config.existingConfigMap.name=helm-repo-config
@@ -253,54 +253,54 @@ All metrics include a `repository` label to filter by specific repositories.
 
 | Metric | Type | Description | Labels |
 |--------|------|-------------|--------|
-| `helm_s3_charts_total` | Gauge | Total number of unique charts | `repository` |
-| `helm_s3_versions_total` | Gauge | Total number of chart versions | `repository` |
-| `helm_s3_chart_versions` | Gauge | Number of versions for each chart | `repository`, `chart` |
-| `helm_s3_chart_age_oldest_seconds` | Gauge | Unix timestamp of the oldest version | `repository`, `chart` |
-| `helm_s3_chart_age_newest_seconds` | Gauge | Unix timestamp of the newest version | `repository`, `chart` |
-| `helm_s3_chart_age_median_seconds` | Gauge | Unix timestamp of the median version | `repository`, `chart` |
-| `helm_s3_overall_age_oldest_seconds` | Gauge | Unix timestamp of the oldest chart in the repository | `repository` |
-| `helm_s3_overall_age_newest_seconds` | Gauge | Unix timestamp of the newest chart in the repository | `repository` |
-| `helm_s3_overall_age_median_seconds` | Gauge | Unix timestamp of the median chart in the repository | `repository` |
-| `helm_s3_scrape_duration_seconds` | Histogram | Duration of the scrape operation | `repository` |
-| `helm_s3_scrape_errors_total` | Counter | Total number of scrape errors | `repository` |
-| `helm_s3_last_scrape_success` | Gauge | Unix timestamp of the last successful scrape | `repository` |
+| `helm_repo_charts_total` | Gauge | Total number of unique charts | `repository` |
+| `helm_repo_versions_total` | Gauge | Total number of chart versions | `repository` |
+| `helm_repo_chart_versions` | Gauge | Number of versions for each chart | `repository`, `chart` |
+| `helm_repo_chart_age_oldest_seconds` | Gauge | Unix timestamp of the oldest version | `repository`, `chart` |
+| `helm_repo_chart_age_newest_seconds` | Gauge | Unix timestamp of the newest version | `repository`, `chart` |
+| `helm_repo_chart_age_median_seconds` | Gauge | Unix timestamp of the median version | `repository`, `chart` |
+| `helm_repo_overall_age_oldest_seconds` | Gauge | Unix timestamp of the oldest chart in the repository | `repository` |
+| `helm_repo_overall_age_newest_seconds` | Gauge | Unix timestamp of the newest chart in the repository | `repository` |
+| `helm_repo_overall_age_median_seconds` | Gauge | Unix timestamp of the median chart in the repository | `repository` |
+| `helm_repo_scrape_duration_seconds` | Histogram | Duration of the scrape operation | `repository` |
+| `helm_repo_scrape_errors_total` | Counter | Total number of scrape errors | `repository` |
+| `helm_repo_last_scrape_success` | Gauge | Unix timestamp of the last successful scrape | `repository` |
 
 ### Example Queries
 
 ```promql
 # Total number of charts across all repositories
-sum(helm_s3_charts_total)
+sum(helm_repo_charts_total)
 
 # Total charts per repository
-helm_s3_charts_total
+helm_repo_charts_total
 
 # Total charts in production repository
-helm_s3_charts_total{repository="production"}
+helm_repo_charts_total{repository="production"}
 
 # Charts with more than 10 versions in bitnami repository
-helm_s3_chart_versions{repository="bitnami"} > 10
+helm_repo_chart_versions{repository="bitnami"} > 10
 
 # Total charts across specific repositories
-sum(helm_s3_charts_total{repository=~"production|staging"})
+sum(helm_repo_charts_total{repository=~"production|staging"})
 
 # Age of the newest chart in hours for a specific repository
-(time() - helm_s3_overall_age_newest_seconds{repository="production"}) / 3600
+(time() - helm_repo_overall_age_newest_seconds{repository="production"}) / 3600
 
 # Scrape duration per repository
-helm_s3_scrape_duration_seconds_sum{repository="bitnami"} / helm_s3_scrape_duration_seconds_count{repository="bitnami"}
+helm_repo_scrape_duration_seconds_sum{repository="bitnami"} / helm_repo_scrape_duration_seconds_count{repository="bitnami"}
 
 # Scrape error rate per repository
-rate(helm_s3_scrape_errors_total{repository="production"}[5m])
+rate(helm_repo_scrape_errors_total{repository="production"}[5m])
 
 # Charts that haven't been updated in 90 days
-(time() - helm_s3_chart_age_newest_seconds) / 86400 > 90
+(time() - helm_repo_chart_age_newest_seconds) / 86400 > 90
 
 # Compare chart counts across repositories
-sum by (repository) (helm_s3_chart_versions)
+sum by (repository) (helm_repo_chart_versions)
 
 # Find repositories with scrape errors
-sum by (repository) (increase(helm_s3_scrape_errors_total[1h])) > 0
+sum by (repository) (increase(helm_repo_scrape_errors_total[1h])) > 0
 ```
 
 ## Helm Chart Values
@@ -323,14 +323,14 @@ sum by (repository) (increase(helm_s3_scrape_errors_total[1h])) > 0
 | `resources.limits.memory` | Memory limit | `128Mi` |
 | `resources.requests.memory` | Memory request | `64Mi` |
 
-See [charts/helm-s3-exporter/values.yaml](charts/helm-s3-exporter/values.yaml) for all options.
+See [charts/helm-repo-exporter/values.yaml](charts/helm-repo-exporter/values.yaml) for all options.
 
 ## Examples
 
 ### Public Repositories
 
 ```bash
-helm install bitnami-exporter ./charts/helm-s3-exporter \
+helm install bitnami-exporter ./charts/helm-repo-exporter \
   -f examples/values-simple-url.yaml
 ```
 
@@ -342,7 +342,7 @@ kubectl create secret generic helm-repos \
   --from-file=config.yaml=examples/config-multi-auth.yaml
 
 # Deploy
-helm install multi-exporter ./charts/helm-s3-exporter \
+helm install multi-exporter ./charts/helm-repo-exporter \
   -f examples/values-multi-repos.yaml
 ```
 
@@ -383,7 +383,7 @@ serviceMonitor:
 Or set from command line:
 
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --set serviceMonitor.enabled=true \
   --set serviceMonitor.additionalLabels.prometheus=kube-prometheus
 ```
@@ -393,9 +393,9 @@ helm install my-exporter ./charts/helm-s3-exporter \
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'helm-s3-exporter'
+  - job_name: 'helm-repo-exporter'
     static_configs:
-      - targets: ['helm-s3-exporter.monitoring.svc.cluster.local:9571']
+      - targets: ['helm-repo-exporter.monitoring.svc.cluster.local:9571']
     scrape_interval: 30s
 ```
 
@@ -408,7 +408,7 @@ groups:
   - name: helm-repository
     rules:
       - alert: HelmRepositoryScrapeError
-        expr: increase(helm_s3_scrape_errors_total[5m]) > 0
+        expr: increase(helm_repo_scrape_errors_total[5m]) > 0
         for: 5m
         labels:
           severity: warning
@@ -497,17 +497,17 @@ resources:
 
 ```bash
 # Check logs
-kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter
 
 # Follow logs
-kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter -f
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter -f
 ```
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────┐
-│           Helm S3 Exporter                  │
+│      Helm Repository Exporter               │
 │                                             │
 │  ┌────────────────────────────────────┐   │
 │  │      Config Loader                 │   │
@@ -554,5 +554,5 @@ Developed by [@obezpalko](https://github.com/obezpalko)
 ## Support
 
 - 📖 [Documentation](examples/CONFIGURATION_GUIDE.md)
-- 🐛 [Issue Tracker](https://github.com/obezpalko/helm-s3-exporter/issues)
-- 💬 [Discussions](https://github.com/obezpalko/helm-s3-exporter/discussions)
+- 🐛 [Issue Tracker](https://github.com/obezpalko/helm-repo-exporter/issues)
+- 💬 [Discussions](https://github.com/obezpalko/helm-repo-exporter/discussions)

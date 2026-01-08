@@ -76,7 +76,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "count(count by (repository) (helm_s3_charts_total))",
+          "expr": "count(count by (repository) (helm_repo_charts_total))",
           "refId": "A"
         }
       ],
@@ -143,7 +143,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "sum(increase(helm_s3_scrape_errors_total{repository=~\"$repository\"}[1h]))",
+          "expr": "sum(increase(helm_repo_scrape_errors_total{repository=~\"$repository\"}[1h]))",
           "range": true,
           "refId": "A"
         }
@@ -207,7 +207,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "sum(helm_s3_charts_total{repository=~\"$repository\"})",
+          "expr": "sum(helm_repo_charts_total{repository=~\"$repository\"})",
           "range": true,
           "refId": "A"
         }
@@ -271,7 +271,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(helm_s3_versions_total{repository=~\"$repository\"})",
+          "expr": "sum(helm_repo_versions_total{repository=~\"$repository\"})",
           "range": true,
           "refId": "A"
         }
@@ -365,7 +365,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "helm_s3_charts_total{repository=~\"$repository\"}",
+          "expr": "helm_repo_charts_total{repository=~\"$repository\"}",
           "legendFormat": "{{repository}}",
           "range": true,
           "refId": "A"
@@ -460,7 +460,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "helm_s3_versions_total{repository=~\"$repository\"}",
+          "expr": "helm_repo_versions_total{repository=~\"$repository\"}",
           "legendFormat": "{{repository}}",
           "range": true,
           "refId": "A"
@@ -558,7 +558,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(helm_s3_scrape_duration_seconds_sum{repository=~\"$repository\"}[5m]) / (rate(helm_s3_scrape_duration_seconds_count{repository=~\"$repository\"}[5m]))",
+          "expr": "rate(helm_repo_scrape_duration_seconds_sum{repository=~\"$repository\"}[5m]) / (rate(helm_repo_scrape_duration_seconds_count{repository=~\"$repository\"}[5m]))",
           "legendFormat": "{{repository}}",
           "range": true,
           "refId": "A"
@@ -630,7 +630,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "helm_s3_charts_total{repository=~\"$repository\"}",
+          "expr": "helm_repo_charts_total{repository=~\"$repository\"}",
           "format": "table",
           "instant": true,
           "refId": "A"
@@ -641,7 +641,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "helm_s3_versions_total{repository=~\"$repository\"}",
+          "expr": "helm_repo_versions_total{repository=~\"$repository\"}",
           "format": "table",
           "instant": true,
           "refId": "B"
@@ -652,7 +652,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "helm_s3_last_scrape_success{repository=~\"$repository\"} * 1000",
+          "expr": "helm_repo_last_scrape_success{repository=~\"$repository\"} * 1000",
           "format": "table",
           "instant": true,
           "refId": "C"
@@ -740,7 +740,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "topk(20, helm_s3_chart_versions{repository=~\"$repository\"})",
+          "expr": "topk(20, helm_repo_chart_versions{repository=~\"$repository\"})",
           "format": "table",
           "instant": true,
           "refId": "A"
@@ -785,13 +785,13 @@
           "text": "All",
           "value": "$__all"
         },
-        "definition": "label_values(helm_s3_charts_total,repository)",
+        "definition": "label_values(helm_repo_charts_total,repository)",
         "includeAll": true,
         "name": "repository",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(helm_s3_charts_total,repository)",
+          "query": "label_values(helm_repo_charts_total,repository)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,

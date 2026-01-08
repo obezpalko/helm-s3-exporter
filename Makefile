@@ -1,7 +1,7 @@
 .PHONY: build run test clean docker-build docker-push helm-lint helm-package
 
 # Variables
-APP_NAME=helm-s3-exporter
+APP_NAME=helm-repo-exporter
 VERSION?=0.1.0
 DOCKER_REGISTRY?=docker.io
 DOCKER_IMAGE=$(DOCKER_REGISTRY)/$(APP_NAME)
