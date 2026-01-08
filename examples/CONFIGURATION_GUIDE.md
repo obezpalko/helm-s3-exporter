@@ -1,6 +1,6 @@
 # Configuration Guide
 
-The Helm S3 Exporter supports multiple repositories with flexible authentication. This guide shows all configuration options.
+The Helm Repository Exporter supports multiple repositories with flexible authentication. This guide shows all configuration options.
 
 ## Table of Contents
 
@@ -257,18 +257,18 @@ repositories:
 scanInterval: 10m
 ```
 
-### Example 3: S3 Buckets
+### Example 3: Public Repositories
 
 ```yaml
-# config-s3.yaml
+# config-public.yaml
 repositories:
-  # Public S3 bucket
-  - name: s3-public
-    url: https://my-charts.s3.us-west-2.amazonaws.com/index.yaml
-  
-  # S3 with presigned URL (generate URL with auth, then use it)
-  - name: s3-private
-    url: https://my-private-charts.s3.us-west-2.amazonaws.com/index.yaml?X-Amz-Security-Token=...
+  # Public repository
+  - name: public-repo
+    url: https://charts.example.com/index.yaml
+
+  # Another public repository
+  - name: another-public
+    url: https://charts.company.com/index.yaml
 
 scanInterval: 15m
 ```
@@ -407,7 +407,7 @@ curl http://localhost:9571/metrics | grep helm_s3_charts_total
 1. **Use Secrets for credentials** - Never put passwords in ConfigMaps
 2. **Use environment variables** - For sensitive values, use env var substitution
 3. **Separate configs per environment** - Different configs for dev/staging/prod
-4. **Monitor scrape errors** - Set up alerts on `helm_s3_scrape_errors_total`
+4. **Monitor scrape errors** - Set up alerts on `helm_repo_scrape_errors_total`
 5. **Use appropriate scan intervals** - Longer intervals for stable repos
 6. **Test URLs manually first** - Verify access before deploying
 

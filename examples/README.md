@@ -6,38 +6,56 @@ This directory contains example configurations for common deployment scenarios.
 
 | File | Description | Use Case |
 |------|-------------|----------|
-| `values-simple.yaml` | Minimal setup | Quick start with IRSA |
-| `values-eks-irsa.yaml` | Production EKS | AWS EKS with IRSA and monitoring |
+| `values-simple.yaml` | Minimal setup | Quick start with single public repository |
+| `values-simple-url.yaml` | Single URL | Simple inline configuration |
+| `values-multi-repos.yaml` | Multiple repos | Multiple repositories with config file |
 | `values-static-credentials.yaml` | Development | Non-production with static credentials |
 | `prometheus-rules.yaml` | Alerting | Prometheus rules and alerts |
-| `aws-iam-policy.json` | IAM Policy | Required S3 permissions |
-| `aws-trust-policy.json` | Trust Policy | IRSA trust relationship |
-| `setup-irsa.sh` | Automation | Script to setup IRSA |
+| `config-single.yaml` | Single repo config | Example config file for one repository |
+| `config-multi-auth.yaml` | Multi-auth config | Multiple repos with different auth methods |
+| `config-multi-interval.yaml` | Per-repo intervals | Different scan intervals per repository |
 
 ## Using Examples
 
 ### Simple Setup (Recommended)
 
-The easiest way to get started with IRSA:
+The easiest way to get started:
 
 ```bash
-# 1. Edit values-simple.yaml with your bucket and role ARN
-# 2. Install
+# Install with a single public repository
 helm install helm-repo-exporter ../charts/helm-repo-exporter \
   -f values-simple.yaml \
   --namespace monitoring \
   --create-namespace
 ```
 
-### Production EKS Setup
+### Multiple Repositories
 
-For a full-featured production deployment:
+For multiple repositories or authentication:
 
 ```bash
+# 1. Create config file
+cat > config.yaml <<EOF
+repositories:
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami/index.yaml
+  - name: private-repo
+    url: https://charts.company.com/index.yaml
+    auth:
+      basic:
+        username: myuser
+        password: mypassword
+EOF
+
+# 2. Create secret
+kubectl create secret generic helm-repo-config \
+  --from-file=config.yaml=config.yaml \
+  --namespace monitoring
+
+# 3. Install
 helm install helm-repo-exporter ../charts/helm-repo-exporter \
-  -f values-eks-irsa.yaml \
-  --namespace monitoring \
-  --create-namespace
+  -f values-multi-repos.yaml \
+  --namespace monitoring
 ```
 
 ### Development Setup
@@ -45,13 +63,23 @@ helm install helm-repo-exporter ../charts/helm-repo-exporter \
 For testing with static credentials:
 
 ```bash
-# Create secret first
-kubectl create secret generic aws-credentials \
-  --from-literal=AWS_ACCESS_KEY_ID=xxx \
-  --from-literal=AWS_SECRET_ACCESS_KEY=yyy \
+# 1. Create config file with credentials
+cat > config.yaml <<EOF
+repositories:
+  - name: private-repo
+    url: https://charts.example.com/index.yaml
+    auth:
+      basic:
+        username: dev-user
+        password: dev-password
+EOF
+
+# 2. Create secret
+kubectl create secret generic helm-repo-credentials \
+  --from-file=config.yaml=config.yaml \
   --namespace monitoring
 
-# Install
+# 3. Install
 helm install helm-repo-exporter ../charts/helm-repo-exporter \
   -f values-static-credentials.yaml \
   --namespace monitoring
@@ -65,60 +93,13 @@ Apply the example alerting rules:
 kubectl apply -f prometheus-rules.yaml -n monitoring
 ```
 
-## IAM Role Setup
-
-### Option 1: Using the setup script
-
-```bash
-./setup-irsa.sh my-cluster us-west-2 my-helm-bucket monitoring
-```
-
-### Option 2: Manual setup
-
-1. Create IAM policy using `aws-iam-policy.json`:
-```bash
-aws iam create-policy \
-  --policy-name helm-repo-exporter-policy \
-  --policy-document file://aws-iam-policy.json
-```
-
-2. Create service account with IRSA:
-```bash
-eksctl create iamserviceaccount \
-  --cluster=my-cluster \
-  --namespace=monitoring \
-  --name=helm-repo-exporter \
-  --attach-policy-arn=arn:aws:iam::ACCOUNT:policy/helm-repo-exporter-policy \
-  --approve
-```
-
-3. Install with the created service account:
-```bash
-helm install helm-repo-exporter ../charts/helm-repo-exporter \
-  --set s3.bucket=my-bucket \
-  --set serviceAccount.create=false \
-  --set serviceAccount.name=helm-repo-exporter
-```
-
-### Option 3: Let Helm create the service account
-
-Simply specify the role ARN in values:
-
-```yaml
-serviceAccount:
-  create: true
-  roleArn: "arn:aws:iam::123456789012:role/helm-repo-exporter-role"
-```
-
-The `eks.amazonaws.com/role-arn` annotation will be added automatically!
-
 ## Customizing Examples
 
 All examples can be customized by:
 
 1. **Copying the file**:
 ```bash
-cp values-eks-irsa.yaml my-values.yaml
+cp values-simple.yaml my-values.yaml
 ```
 
 2. **Editing your copy**:
@@ -161,18 +142,6 @@ resources:
     memory: 128Mi
 ```
 
-### Multiple Annotations
-
-```yaml
-serviceAccount:
-  roleArn: "arn:aws:iam::123456789012:role/my-role"
-  annotations:
-    custom-annotation: "custom-value"
-    another-annotation: "another-value"
-```
-
-The role ARN annotation is added automatically, and your custom annotations are merged in!
-
 ## Validation
 
 Test your values file before installing:
@@ -197,19 +166,19 @@ If you encounter issues:
 helm template test ../charts/helm-repo-exporter -f my-values.yaml | less
 ```
 
-2. **Validate ServiceAccount annotation**:
-```bash
-kubectl get serviceaccount helm-repo-exporter -n monitoring -o yaml
-```
-
-3. **Check logs**:
+2. **Check logs**:
 ```bash
 kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter
+```
+
+3. **Verify configuration**:
+```bash
+kubectl get secret helm-repo-config -n monitoring -o yaml
 ```
 
 ## More Information
 
 - See [QUICKSTART.md](../QUICKSTART.md) for step-by-step installation
 - See [README.md](../README.md) for complete documentation
+- See [CONFIGURATION_GUIDE.md](./CONFIGURATION_GUIDE.md) for detailed configuration options
 - See [SECURITY.md](../SECURITY.md) for security best practices
-

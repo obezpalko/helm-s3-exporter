@@ -9,7 +9,7 @@ Get up and running with Helm Repository Exporter in minutes!
 Perfect for monitoring a single public Helm repository.
 
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --set config.inline.enabled=true \
   --set config.inline.url=https://charts.bitnami.com/bitnami/index.yaml \
   --namespace monitoring \
@@ -27,7 +27,7 @@ kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
 
 # Access metrics
 kubectl port-forward -n monitoring svc/my-exporter 9571:9571
-curl http://localhost:9571/metrics | grep helm_s3
+curl http://localhost:9571/metrics | grep helm_repo
 ```
 
 ---
@@ -80,7 +80,7 @@ kubectl create configmap helm-repo-config \
 **Step 3: Deploy**
 
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --namespace monitoring \
   --create-namespace \
   --set config.existingConfigMap.enabled=true \
@@ -140,7 +140,7 @@ kubectl create secret generic helm-repo-config \
 **Step 3: Deploy**
 
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --namespace monitoring \
   --create-namespace \
   --set config.existingSecret.enabled=true \
@@ -155,7 +155,7 @@ helm install my-exporter ./charts/helm-s3-exporter \
 Enable ServiceMonitor for automatic Prometheus scraping.
 
 ```bash
-helm install my-exporter ./charts/helm-s3-exporter \
+helm install my-exporter ./charts/helm-repo-exporter \
   --namespace monitoring \
   --create-namespace \
   --set config.inline.enabled=true \
@@ -176,15 +176,6 @@ kubectl port-forward -n monitoring svc/prometheus-operated 9090:9090
 ---
 
 ## Common Use Cases
-
-### S3 Bucket (Public)
-
-```bash
-helm install s3-exporter ./charts/helm-s3-exporter \
-  --namespace monitoring \
-  --set config.inline.enabled=true \
-  --set config.inline.url=https://my-bucket.s3.us-west-2.amazonaws.com/index.yaml
-```
 
 ### GitHub Repository (Private)
 
@@ -253,7 +244,7 @@ After installation, verify everything is working:
 
 - [ ] **Prometheus is scraping** (if using Prometheus Operator)
   - Check Prometheus UI → Status → Targets
-  - Look for `helm-s3-exporter` target
+  - Look for `helm-repo-exporter` target
 
 ---
 

@@ -13,7 +13,7 @@ The Helm Repository Exporter monitors Helm chart repositories by periodically fe
 
 ✅ **Multiple Repositories** - Monitor multiple chart repositories simultaneously  
 ✅ **Flexible Authentication** - Support for Basic Auth, Bearer tokens, and custom headers  
-✅ **HTTP/HTTPS Support** - Fetch from any accessible URL (including S3, GitHub, Artifactory, Harbor, etc.)  
+✅ **HTTP/HTTPS Support** - Fetch from any accessible URL (GitHub, Artifactory, Harbor, ChartMuseum, etc.)  
 ✅ **Kubernetes Native** - Designed to run in Kubernetes with full cloud-native support  
 ✅ **Prometheus Metrics** - Exposes detailed metrics about charts, versions, and ages  
 ✅ **ServiceMonitor Ready** - First-class Prometheus Operator support  
@@ -344,16 +344,6 @@ kubectl create secret generic helm-repos \
 # Deploy
 helm install multi-exporter ./charts/helm-repo-exporter \
   -f examples/values-multi-repos.yaml
-```
-
-### S3 Bucket (Public)
-
-```yaml
-# values.yaml
-config:
-  inline:
-    enabled: true
-    url: "https://my-charts.s3.us-west-2.amazonaws.com/index.yaml"
 ```
 
 ### GitHub Repository

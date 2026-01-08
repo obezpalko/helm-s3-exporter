@@ -58,7 +58,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 ```bash
 # Clone the repository
 git clone https://github.com/obezpalko/helm-repo-exporter.git
-cd helm-s3-exporter
+cd helm-repo-exporter
 
 # Install dependencies
 make deps
@@ -69,9 +69,8 @@ make build
 # Run tests
 make test
 
-# Run locally (requires AWS credentials)
-export S3_BUCKET=your-test-bucket
-export S3_REGION=us-east-1
+# Run locally
+export CONFIG_FILE=examples/config-single.yaml
 make run
 ```
 
@@ -103,14 +102,15 @@ make docker-build VERSION=dev
 make helm-lint
 
 # Test installation (dry-run)
-helm install test-release ./charts/helm-s3-exporter \
-  --set s3.bucket=test-bucket \
+helm install test-release ./charts/helm-repo-exporter \
+  --set config.inline.enabled=true \
+  --set config.inline.url=https://charts.bitnami.com/bitnami/index.yaml \
   --dry-run --debug
 
 # Install to test cluster
-helm install test-release ./charts/helm-s3-exporter \
-  --set s3.bucket=test-bucket \
-  --set s3.region=us-east-1
+helm install test-release ./charts/helm-repo-exporter \
+  --set config.inline.enabled=true \
+  --set config.inline.url=https://charts.bitnami.com/bitnami/index.yaml
 ```
 
 ## Code Style
@@ -136,7 +136,7 @@ make lint
 Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
-feat: add support for custom S3 endpoints
+feat: add support for custom repository endpoints
 fix: correct metric label for chart names
 docs: update README with new examples
 chore: update dependencies
@@ -181,7 +181,7 @@ func TestAnalyzeCharts(t *testing.T) {
 
 ### Integration Tests
 
-For integration tests with S3:
+For integration tests with repositories:
 - Use LocalStack or MinIO for local testing
 - Don't hardcode credentials in tests
 - Clean up resources after tests
@@ -196,8 +196,8 @@ Update documentation when:
 
 Documentation to update:
 - README.md - Main documentation
-- HELM-S3-EXPORTER.md - Design documentation
-- charts/helm-s3-exporter/values.yaml - Configuration comments
+- README.md - Main documentation
+- charts/helm-repo-exporter/values.yaml - Configuration comments
 - examples/ - Example configurations
 
 ## Release Process

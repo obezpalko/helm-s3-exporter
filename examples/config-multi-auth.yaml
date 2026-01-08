@@ -27,9 +27,9 @@ repositories:
         X-API-Key: your-api-key-here
         X-Custom-Header: custom-value
 
-  # S3 bucket (public access)
-  - name: s3-public
-    url: https://my-bucket.s3.us-west-2.amazonaws.com/index.yaml
+  # Public repository
+  - name: public-repo
+    url: https://charts.example.com/index.yaml
 
 # Scan configuration
 scanInterval: 10m

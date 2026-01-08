@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-12-23
 
 ### Added
-- Initial release of Helm S3 Exporter
-- S3 client for fetching Helm repository index.yaml files
+- Initial release of Helm Repository Exporter
+- HTTP client for fetching Helm repository index.yaml files
 - Chart analyzer for processing Helm chart metadata
 - Prometheus metrics exporter with comprehensive metrics:
   - Total charts and versions
@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Scrape duration and error metrics
 - Optional HTML dashboard for visualizing charts
 - Kubernetes deployment via Helm chart
-- Support for IAM roles (IRSA) and static credentials
+- Support for multiple authentication methods (Basic Auth, Bearer tokens, custom headers)
 - Configurable scan intervals and timeouts
 - Health and readiness probes
 - ServiceMonitor for Prometheus Operator integration

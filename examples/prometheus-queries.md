@@ -1,6 +1,6 @@
 # Prometheus Query Examples
 
-This document provides example PromQL queries for the Helm S3 Exporter metrics.
+This document provides example PromQL queries for the Helm Repository Exporter metrics.
 
 ## Basic Queries
 
@@ -301,17 +301,17 @@ groups:
     interval: 1m
     rules:
       # Total charts across all repositories
-      - record: helm_s3:charts:total
+      - record: helm_repo:charts:total
         expr: sum(helm_repo_charts_total)
       
       # Average scrape duration per repository
-      - record: helm_s3:scrape_duration:avg
+      - record: helm_repo:scrape_duration:avg
         expr: |
           rate(helm_repo_scrape_duration_seconds_sum[5m]) / 
           rate(helm_repo_scrape_duration_seconds_count[5m])
       
       # Chart version distribution
-      - record: helm_s3:chart_versions:sum_by_repository
+      - record: helm_repo:chart_versions:sum_by_repository
         expr: sum by (repository) (helm_repo_chart_versions)
 ```
 

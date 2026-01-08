@@ -10,41 +10,23 @@
 
 ### Authentication
 
-#### Recommended: IAM Roles for Service Accounts (IRSA)
+The exporter supports multiple authentication methods for accessing Helm repositories:
 
-For production deployments on AWS EKS, always use IRSA:
+#### Using Kubernetes Secrets (Recommended)
 
-```yaml
-auth:
-  useIAMRole: true
-
-serviceAccount:
-  create: true
-  annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT:role/ROLE_NAME
-```
-
-**Benefits:**
-- No static credentials in cluster
-- Automatic credential rotation
-- Fine-grained IAM permissions
-- Audit trail via CloudTrail
-
-#### Using Existing Secrets
-
-If you must use static credentials, use Kubernetes secrets:
+Store credentials securely in Kubernetes secrets:
 
 ```yaml
-auth:
-  useIAMRole: false
-  existingSecret: "aws-credentials"
+config:
+  existingSecret:
+    enabled: true
+    name: "helm-repo-credentials"
 ```
 
 Create the secret securely:
 ```bash
-kubectl create secret generic aws-credentials \
-  --from-literal=AWS_ACCESS_KEY_ID=xxx \
-  --from-literal=AWS_SECRET_ACCESS_KEY=yyy \
+kubectl create secret generic helm-repo-credentials \
+  --from-file=config.yaml=config.yaml \
   --namespace=your-namespace
 ```
 
@@ -54,40 +36,24 @@ kubectl create secret generic aws-credentials \
 
 ```yaml
 # ❌ DO NOT DO THIS IN PRODUCTION
-auth:
-  credentials:
-    accessKeyId: "AKIAIOSFODNN7EXAMPLE"
-    secretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+config:
+  inline:
+    enabled: true
+    url: "https://charts.example.com/index.yaml"
+    # Credentials should never be here
 ```
 
-This is only acceptable for local development/testing.
+This is only acceptable for local development/testing with public repositories.
 
-### IAM Permissions
+### Repository Access Permissions
 
 Follow the principle of least privilege. The exporter only needs:
 
-- `s3:ListBucket` on the bucket
-- `s3:GetObject` on objects in the bucket
+- Read access to `index.yaml` files
+- No write permissions required
+- No access to chart packages (only metadata)
 
-Example minimal IAM policy:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["s3:ListBucket"],
-      "Resource": "arn:aws:s3:::your-bucket"
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["s3:GetObject"],
-      "Resource": "arn:aws:s3:::your-bucket/*"
-    }
-  ]
-}
-```
+Ensure your repository access controls are properly configured.
 
 ### Container Security
 
@@ -101,7 +67,7 @@ The default configuration follows security best practices:
 
 ### Network Security
 
-- The exporter only makes outbound connections to S3
+- The exporter only makes outbound HTTPS connections to configured repositories
 - No inbound connections except for metrics/health endpoints
 - Use NetworkPolicies to restrict traffic:
 
@@ -109,11 +75,11 @@ The default configuration follows security best practices:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: helm-s3-exporter
+  name: helm-repo-exporter
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: helm-s3-exporter
+      app.kubernetes.io/name: helm-repo-exporter
   policyTypes:
   - Ingress
   - Egress
@@ -135,16 +101,17 @@ spec:
     - podSelector: {}
     ports:
     - protocol: TCP
-      port: 443  # HTTPS to S3
+      port: 443  # HTTPS to repositories
 ```
 
 ### Secrets Management
 
-For managing AWS credentials, consider:
+For managing repository credentials, consider:
 
-1. **AWS Secrets Manager**: Use [External Secrets Operator](https://external-secrets.io/)
+1. **External Secrets Operator**: Use [External Secrets Operator](https://external-secrets.io/)
 2. **HashiCorp Vault**: Use [Vault Agent Injector](https://www.vaultproject.io/docs/platform/k8s)
 3. **Sealed Secrets**: Use [Bitnami Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets)
+4. **Cloud Provider Secrets**: Use your cloud provider's secret management service
 
 ### Pod Security Standards
 
@@ -195,8 +162,8 @@ Security updates will be released as patch versions and announced via:
 
 Before deploying to production:
 
-- [ ] Use IRSA or external secrets manager
-- [ ] Apply minimal IAM permissions
+- [ ] Use external secrets manager for credentials
+- [ ] Apply minimal repository access permissions
 - [ ] Enable Pod Security Standards
 - [ ] Configure resource limits
 - [ ] Set up network policies
@@ -205,6 +172,8 @@ Before deploying to production:
 - [ ] Review and rotate credentials regularly
 - [ ] Keep the exporter updated
 - [ ] Scan container images for vulnerabilities
+- [ ] Use HTTPS for all repository URLs
+- [ ] Validate repository URLs and authentication
 
 ## Compliance
 
@@ -212,12 +181,12 @@ The exporter is designed to help meet common compliance requirements:
 
 - **SOC 2**: Audit logging, access controls
 - **PCI DSS**: Network isolation, minimal privileges
-- **HIPAA**: Encryption in transit (S3 HTTPS)
+- **HIPAA**: Encryption in transit (HTTPS)
 - **GDPR**: No PII collection
 
 ## Additional Resources
 
-- [AWS EKS Best Practices - Security](https://aws.github.io/aws-eks-best-practices/security/docs/)
 - [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/)
 - [CIS Kubernetes Benchmark](https://www.cisecurity.org/benchmark/kubernetes)
+- [OWASP Kubernetes Security](https://owasp.org/www-project-kubernetes-top-ten/)
 

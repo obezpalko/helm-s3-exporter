@@ -1,13 +1,10 @@
-# Simple example for quick setup with IRSA
-# Just set your S3 bucket and IAM role ARN
+# Simple example for quick setup
+# Configure a single public repository
 
-s3:
-  bucket: "my-helm-charts-bucket"
-  region: "us-west-2"
-
-# Specify your IAM role ARN - the annotation will be added automatically
-serviceAccount:
-  roleArn: "arn:aws:iam::123456789012:role/helm-repo-exporter-role"
+config:
+  inline:
+    enabled: true
+    url: "https://charts.bitnami.com/bitnami/index.yaml"
 
 # Optional: Enable features
 serviceMonitor:

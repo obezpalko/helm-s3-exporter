@@ -1,6 +1,6 @@
-# Grafana Dashboard for Helm S3 Exporter
+# Grafana Dashboard for Helm Repository Exporter
 
-This guide explains how to import and use the Grafana dashboard for the Helm S3 Exporter.
+This guide explains how to import and use the Grafana dashboard for the Helm Repository Exporter.
 
 ## Dashboard Overview
 
@@ -47,7 +47,7 @@ The dashboard provides comprehensive visualization of your Helm repositories:
 
 - Grafana 8.0 or higher
 - Prometheus datasource configured in Grafana
-- Helm S3 Exporter running and being scraped by Prometheus
+- Helm Repository Exporter running and being scraped by Prometheus
 
 ### Import Dashboard
 
@@ -83,19 +83,19 @@ If using Grafana in Kubernetes with dashboard auto-discovery:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: helm-s3-exporter-dashboard
+  name: helm-repo-exporter-dashboard
   namespace: monitoring
   labels:
     grafana_dashboard: "1"
 data:
-  helm-s3-exporter.json: |-
+  helm-repo-exporter.json: |-
     # Paste contents of grafana-dashboard.json here
 ```
 
 Then apply:
 
 ```bash
-kubectl apply -f helm-s3-exporter-dashboard-configmap.yaml
+kubectl apply -f helm-repo-exporter-dashboard-configmap.yaml
 ```
 
 ### Configure Datasource
@@ -149,41 +149,41 @@ The dashboard uses these key queries:
 ### Total Metrics
 ```promql
 # Total charts across all repositories
-sum(helm_s3_charts_total)
+sum(helm_repo_charts_total)
 
 # Total versions
-sum(helm_s3_versions_total)
+sum(helm_repo_versions_total)
 
 # Total repositories
-count(count by (repository) (helm_s3_charts_total))
+count(count by (repository) (helm_repo_charts_total))
 ```
 
 ### Per-Repository Metrics
 ```promql
 # Charts per repository
-helm_s3_charts_total
+helm_repo_charts_total
 
 # Versions per repository
-helm_s3_versions_total
+helm_repo_versions_total
 
 # Scrape duration (average)
-rate(helm_s3_scrape_duration_seconds_sum[5m]) / 
-rate(helm_s3_scrape_duration_seconds_count[5m])
+rate(helm_repo_scrape_duration_seconds_sum[5m]) / 
+rate(helm_repo_scrape_duration_seconds_count[5m])
 ```
 
 ### Error Monitoring
 ```promql
 # Scrape errors (1 hour)
-sum(increase(helm_s3_scrape_errors_total[1h]))
+sum(increase(helm_repo_scrape_errors_total[1h]))
 
 # Error rate per repository
-rate(helm_s3_scrape_errors_total[5m])
+rate(helm_repo_scrape_errors_total[5m])
 ```
 
 ### Top Charts
 ```promql
 # Top 20 charts by version count
-topk(20, helm_s3_chart_versions)
+topk(20, helm_repo_chart_versions)
 ```
 
 ## Alerting
@@ -195,26 +195,26 @@ Create alerts based on dashboard panels:
 #### High Error Rate
 ```promql
 # Alert when any repository has errors
-sum by (repository) (rate(helm_s3_scrape_errors_total[5m])) > 0
+sum by (repository) (rate(helm_repo_scrape_errors_total[5m])) > 0
 ```
 
 #### Slow Scrapes
 ```promql
 # Alert when scrape duration exceeds 10 seconds
-rate(helm_s3_scrape_duration_seconds_sum[5m]) / 
-rate(helm_s3_scrape_duration_seconds_count[5m]) > 10
+rate(helm_repo_scrape_duration_seconds_sum[5m]) / 
+rate(helm_repo_scrape_duration_seconds_count[5m]) > 10
 ```
 
 #### Stale Data
 ```promql
 # Alert when last scrape was more than 15 minutes ago
-(time() - helm_s3_last_scrape_success) > 900
+(time() - helm_repo_last_scrape_success) > 900
 ```
 
 #### No Charts Found
 ```promql
 # Alert when repository has zero charts
-helm_s3_charts_total == 0
+helm_repo_charts_total == 0
 ```
 
 ### Creating Alerts in Grafana
@@ -237,7 +237,7 @@ helm_s3_charts_total == 0
 2. Check that the exporter is running: `curl http://exporter:9571/metrics`
 3. Verify Prometheus is scraping the exporter
 4. Check Prometheus targets: `http://prometheus:9090/targets`
-5. Verify metrics exist in Prometheus: Query `helm_s3_charts_total`
+5. Verify metrics exist in Prometheus: Query `helm_repo_charts_total`
 
 ### Wrong Datasource
 
@@ -255,7 +255,7 @@ helm_s3_charts_total == 0
 **Issue**: Some panels work, others don't
 
 **Solutions**:
-1. Check if specific metrics are missing: `curl http://exporter:9571/metrics | grep helm_s3`
+1. Check if specific metrics are missing: `curl http://exporter:9571/metrics | grep helm_repo`
 2. Verify the exporter version supports all metrics
 3. Check Prometheus scrape configuration
 4. Look for errors in exporter logs
@@ -278,7 +278,7 @@ helm_s3_charts_total == 0
 3. Configure:
    - **Name**: `repository`
    - **Type**: Query
-   - **Query**: `label_values(helm_s3_charts_total, repository)`
+   - **Query**: `label_values(helm_repo_charts_total, repository)`
    - **Multi-value**: Yes
    - **Include All**: Yes
 4. Save dashboard
@@ -292,7 +292,7 @@ Example: Show charts added in last 24 hours
 2. Use query:
    ```promql
    sum by (repository) (
-     helm_s3_chart_age_newest_seconds > (time() - 86400)
+     helm_repo_chart_age_newest_seconds > (time() - 86400)
    )
    ```
 3. Configure visualization
@@ -323,10 +323,10 @@ Create dynamic dashboards using variables:
 
 ```promql
 # Use in queries
-helm_s3_charts_total{repository="$repository"}
+helm_repo_charts_total{repository="$repository"}
 
 # Chain variables
-label_values(helm_s3_chart_versions{repository="$repository"}, chart)
+label_values(helm_repo_chart_versions{repository="$repository"}, chart)
 ```
 
 ### Annotations
@@ -354,13 +354,13 @@ If you have many repositories or charts:
 
 1. **Limit Data Points**:
    ```promql
-   helm_s3_charts_total[1h:1m]  # Resolution: 1 minute
+   helm_repo_charts_total[1h:1m]  # Resolution: 1 minute
    ```
 
 2. **Use Recording Rules**:
    ```yaml
    - record: helm:charts:total
-     expr: sum(helm_s3_charts_total)
+     expr: sum(helm_repo_charts_total)
    ```
 
 3. **Reduce Refresh Rate**: Set to 1m or 5m instead of 30s
@@ -393,7 +393,7 @@ To improve the dashboard:
 
 - [Grafana Documentation](https://grafana.com/docs/)
 - [Prometheus Query Examples](prometheus-queries.md)
-- [Helm S3 Exporter README](../README.md)
+- [Helm Repository Exporter README](../README.md)
 - [Grafana Best Practices](https://grafana.com/docs/grafana/latest/best-practices/)
 
 ---

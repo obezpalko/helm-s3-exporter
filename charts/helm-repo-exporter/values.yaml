@@ -43,9 +43,9 @@ serviceAccount:
 
 # Scanning Configuration
 scan:
-  # How often to scan the S3 bucket (e.g., "5m", "10m", "1h")
+  # How often to scan repositories (e.g., "5m", "10m", "1h")
   interval: "5m"
-  # Timeout for S3 operations (e.g., "30s", "1m")
+  # Timeout for repository operations (e.g., "30s", "1m")
   timeout: "30s"
 
 # Metrics Configuration
