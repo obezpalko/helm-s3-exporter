@@ -117,12 +117,12 @@ jobs:
     
     - name: Update chart version
       run: |
-        sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" charts/helm-s3-exporter/Chart.yaml
-        sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.VERSION }}\"/" charts/helm-s3-exporter/Chart.yaml
+        sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" charts/helm-repo-exporter/Chart.yaml
+        sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.VERSION }}\"/" charts/helm-repo-exporter/Chart.yaml
     
     - name: Package chart
       run: |
-        helm package charts/helm-s3-exporter -d .deploy
+        helm package charts/helm-repo-exporter -d .deploy
     
     - name: Upload chart to release
       uses: softprops/action-gh-release@v1

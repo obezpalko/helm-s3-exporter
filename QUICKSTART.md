@@ -23,7 +23,7 @@ helm install my-exporter ./charts/helm-repo-exporter \
 kubectl get pods -n monitoring
 
 # View logs
-kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter
 
 # Access metrics
 kubectl port-forward -n monitoring svc/my-exporter 9571:9571
@@ -222,12 +222,12 @@ After installation, verify everything is working:
 
 - [ ] **Pod is running**
   ```bash
-  kubectl get pods -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+  kubectl get pods -n monitoring -l app.kubernetes.io/name=helm-repo-exporter
   ```
 
 - [ ] **Logs show successful scraping**
   ```bash
-  kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+  kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter
   # Should see: "Scrape completed" messages
   ```
 
@@ -254,7 +254,7 @@ After installation, verify everything is working:
 
 ```bash
 # Check logs
-kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter
 
 # Common issues:
 # - Missing config: Enable one of config.inline, config.existingSecret, or config.existingConfigMap
@@ -273,7 +273,7 @@ kubectl port-forward -n monitoring svc/my-exporter 9571:9571
 curl http://localhost:9571/metrics
 
 # Check for errors in logs
-kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter | grep -i error
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter | grep -i error
 ```
 
 ### Authentication Failures
@@ -307,7 +307,7 @@ kubectl get secret helm-repo-config -n monitoring -o yaml
 
 ```bash
 # View logs
-kubectl logs -n monitoring -l app.kubernetes.io/name=helm-s3-exporter -f
+kubectl logs -n monitoring -l app.kubernetes.io/name=helm-repo-exporter -f
 
 # Restart deployment
 kubectl rollout restart deployment -n monitoring my-exporter
