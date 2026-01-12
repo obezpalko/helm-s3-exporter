@@ -23,17 +23,35 @@ The Helm Repository Exporter monitors Helm chart repositories by periodically fe
 
 ## Quick Start
 
-### Simple Single Repository
+### Docker Compose (Fastest)
+
+```bash
+# Clone the repository
+git clone https://github.com/obezpalko/helm-repo-exporter.git
+cd helm-repo-exporter
+
+# Start the exporter
+docker compose up -d
+
+# View metrics at http://localhost:9571/metrics
+# View dashboard at http://localhost:9571/charts
+```
+
+See [DOCKER_COMPOSE.md](DOCKER_COMPOSE.md) for detailed Docker Compose documentation.
+
+### Kubernetes with Helm
+
+#### Simple Single Repository
 
 ```bash
 # Install with Helm (single public repository)
 helm install helm-repo-exporter ./charts/helm-repo-exporter \
   --set config.inline.enabled=true \
   --set config.inline.url=https://charts.bitnami.com/bitnami/index.yaml \
-  --namespace monitoring --create-namespace
+  --namespace helm-repo-exporter --create-namespace
 ```
 
-### Multiple Repositories with Authentication
+#### Multiple Repositories with Authentication
 
 ```bash
 # 1. Create config file

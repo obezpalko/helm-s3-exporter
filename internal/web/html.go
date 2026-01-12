@@ -18,7 +18,14 @@ type HTMLGenerator struct {
 
 // NewHTMLGenerator creates a new HTML generator
 func NewHTMLGenerator() (*HTMLGenerator, error) {
-	tmpl, err := template.New("charts").Parse(htmlTemplate)
+	// Create template with custom functions
+	funcMap := template.FuncMap{
+		"safeAttr": func(s string) template.HTMLAttr {
+			return template.HTMLAttr(s)
+		},
+	}
+
+	tmpl, err := template.New("charts").Funcs(funcMap).Parse(htmlTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +363,7 @@ const htmlTemplate = `<!DOCTYPE html>
                     <div class="chart-header">
                         <div class="chart-title-section">
                             {{if .Icon}}
-                            <img src="{{.Icon}}" alt="{{.Name}}" class="chart-icon" onerror="this.style.display='none'">
+                            <img {{safeAttr (printf "src=\"%s\"" .Icon)}} alt="{{.Name}}" class="chart-icon" onerror="this.style.display='none'">
                             {{end}}
                             <div>
                                 <div class="chart-name">{{.Name}}</div>

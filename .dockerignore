@@ -1,8 +1,58 @@
+# Git
 .git
 .gitignore
-README.md
-HELM-S3-EXPORTER.md
-charts/
-*.md
 .github
 
+# Documentation
+*.md
+docs/
+examples/
+
+# Development files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+testdata/
+
+# Configuration files (should be mounted)
+config.yaml
+config-*.yaml
+*.env
+.env*
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+compose.yaml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Charts (Helm)
+charts/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

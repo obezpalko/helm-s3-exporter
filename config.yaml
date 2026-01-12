@@ -1,0 +1,61 @@
+# Helm Repository Exporter Configuration
+# This is a sample configuration file for Docker Compose deployment
+
+repositories:
+  # Example: Bitnami Helm repository
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami/index.yaml
+    scanInterval: 15m
+
+  # Example: Prometheus Community Helm repository
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts/index.yaml
+    scanInterval: 10m
+
+  # Example: Grafana Helm repository
+  - name: grafana
+    url: https://grafana.github.io/helm-charts/index.yaml
+    scanInterval: 10m
+
+  - name: CloudPirates
+    url: https://CloudPirates-io.github.io/helm-charts/index.yaml
+
+
+  - name: opik
+    url: https://comet-ml.github.io/opik/index.yaml
+
+  # Example: Private repository with basic authentication
+  # Uncomment and configure for your private repository
+  # - name: private-repo
+  #   url: https://charts.example.com/index.yaml
+  #   scanInterval: 5m
+  #   auth:
+  #     basic:
+  #       username: myuser
+  #       password: mypassword
+
+  # Example: Repository with bearer token authentication
+  # - name: private-repo-token
+  #   url: https://charts.example.com/index.yaml
+  #   auth:
+  #     bearerToken: your-bearer-token-here
+
+  # Example: Repository with custom headers
+  # - name: private-repo-headers
+  #   url: https://charts.example.com/index.yaml
+  #   auth:
+  #     headers:
+  #       X-Custom-Auth: custom-value
+  #       X-API-Key: your-api-key
+
+# Global scan configuration
+scanInterval: 5m
+scanTimeout: 30s
+
+# Server configuration
+metricsPort: "9571"
+metricsPath: /metrics
+
+# Optional HTML dashboard
+enableHTML: true
+htmlPath: /charts

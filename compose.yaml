@@ -1,0 +1,27 @@
+services:
+  helm-repo-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: helm-repo-exporter
+    ports:
+      - "9571:9571"
+    environment:
+      # Option 1: Use CONFIG_FILE environment variable (recommended)
+      - CONFIG_FILE=/config/config.yaml
+      
+      # Option 2: Simple single URL mode (uncomment to use instead)
+      # - INDEX_URL=https://charts.bitnami.com/bitnami/index.yaml
+      # - SCAN_INTERVAL=5m
+      # - SCAN_TIMEOUT=30s
+      # - METRICS_PORT=9571
+      # - METRICS_PATH=/metrics
+      # - ENABLE_HTML=true
+      # - HTML_PATH=/charts
+    volumes:
+      # Mount configuration file
+      - ./config.yaml:/config/config.yaml:ro
+    restart: unless-stopped
+    # Note: Health check is disabled because distroless image has no shell/wget/curl
+    # Docker will monitor the container process instead
+    # For external health checks, use: curl http://localhost:9571/health

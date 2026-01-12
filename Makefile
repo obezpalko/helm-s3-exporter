@@ -1,4 +1,4 @@
-.PHONY: build run test clean docker-build docker-push helm-lint helm-package
+.PHONY: build run test clean docker-build docker-push helm-lint helm-package compose-up compose-down compose-logs compose-restart compose-build compose-clean
 
 # Variables
 APP_NAME=helm-repo-exporter
@@ -72,4 +72,29 @@ lint:
 generate:
 	@echo "Generating code..."
 	go generate ./...
+
+# Docker Compose commands
+compose-up:
+	@echo "Starting services with Docker Compose..."
+	docker compose up -d
+
+compose-down:
+	@echo "Stopping services..."
+	docker compose down
+
+compose-logs:
+	@echo "Following logs..."
+	docker compose logs -f
+
+compose-restart:
+	@echo "Restarting services..."
+	docker compose restart
+
+compose-build:
+	@echo "Building Docker Compose services..."
+	docker compose build
+
+compose-clean:
+	@echo "Cleaning up Docker Compose..."
+	docker compose down
 

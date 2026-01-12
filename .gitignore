@@ -32,3 +32,12 @@ bin/
 dist/
 build/
 
+# Docker Compose
+.env
+.env.*
+config.yaml.local
+
+# Prometheus and Grafana data
+prometheus-data/
+grafana-data/
+

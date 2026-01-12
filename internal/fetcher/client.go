@@ -75,3 +75,8 @@ func (c *Client) addAuthentication(req *http.Request) {
 func (c *Client) RepositoryName() string {
 	return c.repo.Name
 }
+
+// RepositoryURL returns the URL of the repository
+func (c *Client) RepositoryURL() string {
+	return c.repo.URL
+}

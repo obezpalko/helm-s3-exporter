@@ -3,6 +3,7 @@ package analyzer
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -67,11 +68,30 @@ func ParseIndex(data []byte) (*HelmIndex, error) {
 
 // AnalyzeCharts performs analysis on the Helm index
 func AnalyzeCharts(index *HelmIndex) *ChartAnalysis {
-	return AnalyzeChartsWithRepo(index, "")
+	return AnalyzeChartsWithRepo(index, "", "")
 }
 
-// AnalyzeChartsWithRepo performs analysis on the Helm index with repository name
-func AnalyzeChartsWithRepo(index *HelmIndex, repository string) *ChartAnalysis {
+// resolveChartURL resolves a chart URL, handling both absolute and relative URLs
+// If the URL is relative (doesn't start with a protocol), it prepends the repository base URL
+func resolveChartURL(chartURL, repoURL string) string {
+	// Check if the URL is already absolute (starts with a protocol)
+	if strings.Contains(chartURL, "://") {
+		return chartURL
+	}
+
+	// URL is relative, construct the full URL from the repository base
+	// Remove trailing /index.yaml from repoURL if present
+	baseURL := strings.TrimSuffix(repoURL, "/index.yaml")
+	baseURL = strings.TrimSuffix(baseURL, "/")
+
+	// Ensure chartURL doesn't start with /
+	chartURL = strings.TrimPrefix(chartURL, "/")
+
+	return baseURL + "/" + chartURL
+}
+
+// AnalyzeChartsWithRepo performs analysis on the Helm index with repository name and URL
+func AnalyzeChartsWithRepo(index *HelmIndex, repository string, repoURL string) *ChartAnalysis {
 	analysis := &ChartAnalysis{
 		TotalCharts: len(index.Entries),
 		ChartsInfo:  make([]ChartInfo, 0, len(index.Entries)),
@@ -97,10 +117,10 @@ func AnalyzeChartsWithRepo(index *HelmIndex, repository string) *ChartAnalysis {
 			analysis.TotalVersions++
 			chartInfo.Versions = append(chartInfo.Versions, version.Version)
 
-			// Get the first URL if available
+			// Get the first URL if available and resolve it
 			url := ""
 			if len(version.URLs) > 0 {
-				url = version.URLs[0]
+				url = resolveChartURL(version.URLs[0], repoURL)
 			}
 
 			chartInfo.VersionDetails = append(chartInfo.VersionDetails, VersionDetail{
