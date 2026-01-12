@@ -15,7 +15,7 @@ func TestSanitizeIconURL_Internal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create HTML generator: %v", err)
 	}
-	
+
 	// We'll test the sanitization through actual rendering
 	tests := []struct {
 		name     string
@@ -33,7 +33,7 @@ func TestSanitizeIconURL_Internal(t *testing.T) {
 			input:    "http://example.com/icon.png",
 			expected: "http://example.com/icon.png",
 		},
-		
+
 		// Valid data URIs
 		{
 			name:     "valid data URI - SVG",
@@ -50,7 +50,7 @@ func TestSanitizeIconURL_Internal(t *testing.T) {
 			input:    "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
 			expected: "data:image/jpeg;base64,/9j/4AAQSkZJRg==",
 		},
-		
+
 		// XSS attack attempts - should be blocked
 		{
 			name:     "XSS - javascript protocol",
@@ -82,7 +82,7 @@ func TestSanitizeIconURL_Internal(t *testing.T) {
 			input:    "vbscript:msgbox('XSS')",
 			expected: "",
 		},
-		
+
 		// Invalid formats
 		{
 			name:     "empty string",
@@ -128,14 +128,14 @@ func TestSanitizeIconURL_Internal(t *testing.T) {
 					},
 				},
 			}
-			
+
 			gen.Update(analysis)
 			req := httptest.NewRequest("GET", "/charts", nil)
 			w := httptest.NewRecorder()
 			gen.ServeHTTP(w, req)
-			
+
 			body := w.Body.String()
-			
+
 			if tt.expected != "" {
 				// Should contain the expected URL (possibly escaped)
 				if !strings.Contains(body, tt.expected) && !strings.Contains(body, strings.ReplaceAll(tt.expected, "+", "&#43;")) {
@@ -291,7 +291,7 @@ func TestHTMLGenerator_XSSProtection(t *testing.T) {
 			imgEnd := strings.Index(body[imgStart:], `"`)
 			if imgEnd != -1 {
 				srcValue := body[imgStart : imgStart+imgEnd]
-				
+
 				// Check that the src doesn't contain dangerous patterns
 				dangerousPatterns := []string{
 					"<script>",
@@ -300,7 +300,7 @@ func TestHTMLGenerator_XSSProtection(t *testing.T) {
 					"alert(",
 					"onload=",
 				}
-				
+
 				for _, pattern := range dangerousPatterns {
 					if strings.Contains(srcValue, pattern) {
 						t.Errorf("Dangerous pattern %q found in img src for payload: %s", pattern, payload)
