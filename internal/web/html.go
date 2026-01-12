@@ -3,6 +3,8 @@ package web
 import (
 	"html/template"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,12 +18,77 @@ type HTMLGenerator struct {
 	template *template.Template
 }
 
+// sanitizeIconURL validates and sanitizes icon URLs to prevent XSS attacks
+// It allows:
+// - HTTP/HTTPS URLs
+// - Data URIs (for inline images with base64 encoding)
+// Returns empty string if the URL is potentially malicious
+func sanitizeIconURL(iconURL string) string {
+	if iconURL == "" {
+		return ""
+	}
+
+	// Check for data URI (inline images)
+	if strings.HasPrefix(iconURL, "data:image/") {
+		// Validate data URI format: data:image/<type>;base64,<data>
+		// Only allow safe image types and base64 encoding
+		parts := strings.SplitN(iconURL, ",", 2)
+		if len(parts) != 2 {
+			return "" // Invalid data URI format
+		}
+
+		header := parts[0]
+		// Must be: data:image/<type>;base64
+		if !strings.HasPrefix(header, "data:image/") {
+			return ""
+		}
+		if !strings.Contains(header, ";base64") {
+			return "" // Only allow base64 encoding to prevent inline scripts
+		}
+
+		// Check for allowed image types
+		allowedTypes := []string{"svg+xml", "png", "jpeg", "jpg", "gif", "webp"}
+		hasValidType := false
+		for _, imgType := range allowedTypes {
+			if strings.Contains(header, "data:image/"+imgType) {
+				hasValidType = true
+				break
+			}
+		}
+		if !hasValidType {
+			return ""
+		}
+
+		// Data URI is valid, return as-is
+		return iconURL
+	}
+
+	// Parse as regular URL
+	parsedURL, err := url.Parse(iconURL)
+	if err != nil {
+		return "" // Invalid URL
+	}
+
+	// Only allow http and https schemes
+	scheme := strings.ToLower(parsedURL.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return "" // Reject dangerous schemes (javascript:, vbscript:, data:, file:, etc.)
+	}
+
+	// URL is valid
+	return iconURL
+}
+
 // NewHTMLGenerator creates a new HTML generator
 func NewHTMLGenerator() (*HTMLGenerator, error) {
 	// Create template with custom functions
 	funcMap := template.FuncMap{
-		"safeAttr": func(s string) template.HTMLAttr {
-			return template.HTMLAttr(s)
+		"safeIconURL": func(iconURL string) template.URL {
+			// Sanitize the URL first to block XSS attacks
+			sanitized := sanitizeIconURL(iconURL)
+			// Return as template.URL which is safe for src attributes
+			// template.URL prevents additional escaping while still being safe
+			return template.URL(sanitized)
 		},
 	}
 
@@ -363,7 +430,7 @@ const htmlTemplate = `<!DOCTYPE html>
                     <div class="chart-header">
                         <div class="chart-title-section">
                             {{if .Icon}}
-                            <img {{safeAttr (printf "src=\"%s\"" .Icon)}} alt="{{.Name}}" class="chart-icon" onerror="this.style.display='none'">
+                            <img src="{{safeIconURL .Icon}}" alt="{{.Name}}" class="chart-icon" onerror="this.style.display='none'">
                             {{end}}
                             <div>
                                 <div class="chart-name">{{.Name}}</div>
