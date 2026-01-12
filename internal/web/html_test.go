@@ -68,9 +68,14 @@ func TestSanitizeIconURL_Internal(t *testing.T) {
 			expected: "",
 		},
 		{
-			name:     "XSS - event handler injection",
+			name:     "XSS - event handler injection with quote",
 			input:    `https://example.com/icon.svg" onerror="alert('XSS')`,
-			expected: "", // This should be blocked or escaped
+			expected: "", // URL parsing should fail or normalize this
+		},
+		{
+			name:     "URL with query parameters",
+			input:    `https://example.com/icon.svg?param=value`,
+			expected: `https://example.com/icon.svg?param=value`,
 		},
 		{
 			name:     "XSS - data URI without base64",
