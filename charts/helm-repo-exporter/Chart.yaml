@@ -2,8 +2,9 @@ apiVersion: v2
 name: helm-repo-exporter
 description: A Prometheus exporter for Helm chart repositories (HTTP/HTTPS)
 type: application
-version: 0.2.2
-appVersion: "0.2.2"
+# Version is automatically set during release by the CI/CD workflow
+version: 0.0.0-dev
+appVersion: "0.0.0-dev"
 keywords:
   - prometheus
   - exporter

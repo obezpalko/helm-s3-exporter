@@ -1,6 +1,8 @@
 # GitHub Actions Workflows
 
-This directory contains CI/CD workflows for the Helm S3 Exporter project.
+This directory contains CI/CD workflows for the Helm Repository Exporter project.
+
+> **📖 For detailed release instructions, see [RELEASE_PROCESS.md](../RELEASE_PROCESS.md)**
 
 ## Workflows
 
@@ -38,7 +40,7 @@ This directory contains CI/CD workflows for the Helm S3 Exporter project.
 
 ### 2. Release (`release.yaml`)
 
-**Triggers**: Push tags matching `v*` (e.g., `v0.1.0`)
+**Triggers**: Push tags matching `v*` (e.g., `v1.2.3`)
 
 **Jobs**:
 
@@ -46,21 +48,34 @@ This directory contains CI/CD workflows for the Helm S3 Exporter project.
   - Build binaries for multiple platforms:
     - Linux (amd64, arm64)
     - macOS (amd64, arm64)
-  - Generate checksums
-  - Create release with notes
+  - Generate SHA256 checksums
+  - Generate build attestations
+  - Create release with auto-generated notes
   
 - **Docker** - Build and push images
   - Multi-platform builds (amd64, arm64)
-  - Push to Docker Hub
-  - Semantic versioning tags
+  - Push to GitHub Container Registry (ghcr.io)
+  - Tag with semantic versions (v1.2.3, v1.2, v1, latest)
+  - Generate and push image attestations
   
 - **Helm** - Package and publish chart
-  - Update chart version
+  - Update chart version from git tag
   - Package Helm chart
-  - Attach to GitHub release
+  - Generate chart attestations
+  - Publish to GitHub Pages
+  - Update Helm repository index.yaml
 
 **Required Secrets**:
-- `GITHUB_TOKEN` - Automatically provided (used for GHCR and releases)
+- `GITHUB_TOKEN` - Automatically provided (used for GHCR, releases, and attestations)
+
+**Features**:
+- ✅ Multi-platform binary builds
+- ✅ Automated semantic versioning
+- ✅ Release notes generation
+- ✅ Docker multi-arch support
+- ✅ Build attestations for supply chain security
+- ✅ Helm repository on GitHub Pages
+- ✅ SLSA provenance compliance
 
 **Note**: Docker images are published to GitHub Container Registry (ghcr.io). No additional secrets required!
 
@@ -89,27 +104,31 @@ helm lint charts/helm-repo-exporter
 
 ### Creating a Release
 
-1. **Update version** in relevant files:
-   - `charts/helm-repo-exporter/Chart.yaml`
-   - `CHANGELOG.md`
+> **📖 See [RELEASE_PROCESS.md](../RELEASE_PROCESS.md) for complete release instructions**
+
+Quick steps:
+
+1. **Update CHANGELOG.md** with the new version
 
 2. **Commit changes**:
    ```bash
-   git add .
-   git commit -m "chore: prepare release v0.1.0"
+   git add CHANGELOG.md
+   git commit -m "docs: update changelog for v1.2.3"
    git push
    ```
 
 3. **Create and push tag**:
    ```bash
-   git tag -a v0.1.0 -m "Release v0.1.0"
-   git push origin v0.1.0
+   git tag -a v1.2.3 -m "Release v1.2.3"
+   git push origin v1.2.3
    ```
 
 4. **Monitor workflow**:
    - Go to Actions tab in GitHub
    - Watch the release workflow
-   - Check the Releases page for artifacts
+   - Verify release artifacts and attestations
+
+**Note**: `Chart.yaml` uses `0.0.0-dev` as a placeholder. The actual version is automatically set during the release process.
 
 ### Setting Up Secrets
 

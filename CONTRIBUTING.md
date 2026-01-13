@@ -202,14 +202,41 @@ Documentation to update:
 
 ## Release Process
 
-Releases are managed by maintainers:
+Releases are automated via GitHub Actions:
 
-1. Update version in relevant files
-2. Update CHANGELOG.md
-3. Create release tag
-4. Build and push Docker image
-5. Package and publish Helm chart
-6. Create GitHub release with notes
+### Versioning Strategy
+
+- **Chart.yaml versions**: The `Chart.yaml` file in the repository uses `0.0.0-dev` as a placeholder. The actual version is automatically set during the release process based on the git tag.
+- **Git tags**: Create a new release by pushing a semantic version tag (e.g., `v1.2.3`)
+- **Automated workflow**: The release workflow automatically:
+  - Updates `Chart.yaml` with the tag version
+  - Builds and publishes Docker images
+  - Packages and publishes the Helm chart
+  - Creates GitHub release with attestations
+  - Updates the Helm repository index on GitHub Pages
+
+### Creating a Release
+
+1. **Update CHANGELOG.md** with the new version and changes
+2. **Commit changes** to the main branch
+3. **Create and push a tag**:
+   ```bash
+   git tag -a v1.2.3 -m "Release v1.2.3"
+   git push origin v1.2.3
+   ```
+4. **Monitor the workflow** at `.github/workflows/release.yaml`
+5. The release will be automatically created with:
+   - Compiled binaries for multiple platforms
+   - Docker images with attestations
+   - Helm chart published to GitHub Pages
+   - Release notes generated from commits
+
+### Version Numbers
+
+Follow [Semantic Versioning](https://semver.org/):
+- **MAJOR** (v2.0.0): Breaking changes
+- **MINOR** (v1.1.0): New features, backwards compatible
+- **PATCH** (v1.0.1): Bug fixes, backwards compatible
 
 ## Questions?
 
