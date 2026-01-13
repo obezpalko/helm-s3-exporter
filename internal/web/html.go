@@ -89,6 +89,7 @@ func NewHTMLGenerator() (*HTMLGenerator, error) {
 			sanitized := sanitizeIconURL(iconURL)
 			// Return as template.URL which is safe for src attributes
 			// template.URL prevents additional escaping while still being safe
+			// #nosec G203 -- sanitizeIconURL validates the URL before returning it
 			return template.URL(sanitized)
 		},
 	}
@@ -135,13 +136,8 @@ func (h *HTMLGenerator) Update(analysis *analyzer.ChartAnalysis) {
 			// This is already merged data (from initial scrape or full update)
 			h.analysis = analysis
 
-			// Also update the per-repo cache if we can
-			for _, chart := range analysis.ChartsInfo {
-				if chart.Repository != "" {
-					// Note: This is a best-effort cache update for merged data
-					// Individual repo data will be properly updated on next scrape
-				}
-			}
+			// Note: Per-repo cache update is skipped for merged data
+			// Individual repo data will be properly updated on next scrape
 		}
 	} else {
 		// Empty analysis, just set it
