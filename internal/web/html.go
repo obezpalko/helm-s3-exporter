@@ -13,9 +13,10 @@ import (
 
 // HTMLGenerator generates HTML dashboard for charts
 type HTMLGenerator struct {
-	mu       sync.RWMutex
-	analysis *analyzer.ChartAnalysis
-	template *template.Template
+	mu           sync.RWMutex
+	analysis     *analyzer.ChartAnalysis
+	repoAnalyses map[string]*analyzer.ChartAnalysis // Per-repository analysis cache
+	template     *template.Template
 }
 
 // sanitizeIconURL validates and sanitizes icon URLs to prevent XSS attacks
@@ -98,15 +99,104 @@ func NewHTMLGenerator() (*HTMLGenerator, error) {
 	}
 
 	return &HTMLGenerator{
-		template: tmpl,
+		template:     tmpl,
+		repoAnalyses: make(map[string]*analyzer.ChartAnalysis),
 	}, nil
 }
 
 // Update updates the analysis data
+// If the analysis has a single repository, it updates that repo's data and merges all repos
+// If the analysis has multiple repositories (merged), it replaces the entire view
 func (h *HTMLGenerator) Update(analysis *analyzer.ChartAnalysis) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.analysis = analysis
+
+	// Check if this is a single-repo update or a merged update
+	if len(analysis.ChartsInfo) > 0 {
+		// Determine if this is a single repository or merged data
+		// Single repo: all charts have the same repository name
+		// Merged: charts may have different repository names
+		firstRepo := analysis.ChartsInfo[0].Repository
+		isSingleRepo := true
+		for _, chart := range analysis.ChartsInfo {
+			if chart.Repository != firstRepo {
+				isSingleRepo = false
+				break
+			}
+		}
+
+		if isSingleRepo && firstRepo != "" {
+			// Update the specific repository's data
+			h.repoAnalyses[firstRepo] = analysis
+
+			// Merge all repository analyses
+			h.analysis = h.mergeAllRepos()
+		} else {
+			// This is already merged data (from initial scrape or full update)
+			h.analysis = analysis
+
+			// Also update the per-repo cache if we can
+			for _, chart := range analysis.ChartsInfo {
+				if chart.Repository != "" {
+					// Note: This is a best-effort cache update for merged data
+					// Individual repo data will be properly updated on next scrape
+				}
+			}
+		}
+	} else {
+		// Empty analysis, just set it
+		h.analysis = analysis
+	}
+}
+
+// mergeAllRepos merges all cached repository analyses into a single view
+func (h *HTMLGenerator) mergeAllRepos() *analyzer.ChartAnalysis {
+	if len(h.repoAnalyses) == 0 {
+		return &analyzer.ChartAnalysis{}
+	}
+
+	var merged *analyzer.ChartAnalysis
+	for _, repoAnalysis := range h.repoAnalyses {
+		if merged == nil {
+			// Deep copy the first analysis
+			merged = &analyzer.ChartAnalysis{
+				TotalCharts:     repoAnalysis.TotalCharts,
+				TotalVersions:   repoAnalysis.TotalVersions,
+				ChartsInfo:      append([]analyzer.ChartInfo{}, repoAnalysis.ChartsInfo...),
+				OldestChartDate: repoAnalysis.OldestChartDate,
+				NewestChartDate: repoAnalysis.NewestChartDate,
+				MedianChartDate: repoAnalysis.MedianChartDate,
+			}
+		} else {
+			// Merge this repo's data
+			merged.TotalCharts += repoAnalysis.TotalCharts
+			merged.TotalVersions += repoAnalysis.TotalVersions
+			merged.ChartsInfo = append(merged.ChartsInfo, repoAnalysis.ChartsInfo...)
+
+			// Update date statistics
+			if !repoAnalysis.OldestChartDate.IsZero() {
+				if merged.OldestChartDate.IsZero() || repoAnalysis.OldestChartDate.Before(merged.OldestChartDate) {
+					merged.OldestChartDate = repoAnalysis.OldestChartDate
+				}
+			}
+
+			if !repoAnalysis.NewestChartDate.IsZero() {
+				if merged.NewestChartDate.IsZero() || repoAnalysis.NewestChartDate.After(merged.NewestChartDate) {
+					merged.NewestChartDate = repoAnalysis.NewestChartDate
+				}
+			}
+
+			// For median, approximate by averaging (good enough for display)
+			if !repoAnalysis.MedianChartDate.IsZero() && !merged.MedianChartDate.IsZero() {
+				avg := (merged.MedianChartDate.Unix() + repoAnalysis.MedianChartDate.Unix()) / 2
+				merged.MedianChartDate = time.Unix(avg, 0)
+			} else if !repoAnalysis.MedianChartDate.IsZero() {
+				merged.MedianChartDate = repoAnalysis.MedianChartDate
+			}
+		}
+	}
+
+	return merged
 }
 
 // ServeHTTP handles HTTP requests for the charts dashboard

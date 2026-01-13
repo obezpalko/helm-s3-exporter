@@ -273,8 +273,7 @@ func performSingleRepoScrape(ctx context.Context, client *fetcher.Client, metric
 	metricsCollector.ScrapeDuration.WithLabelValues(repoName).Observe(duration.Seconds())
 
 	// Update HTML dashboard with this repo's data if enabled
-	// Note: This will overwrite previous data in the HTML dashboard
-	// For multiple repos, the dashboard will show the last scraped repo
+	// The HTML generator will merge this with other repositories' data
 	if htmlGenerator != nil {
 		htmlGenerator.Update(analysis)
 	}
