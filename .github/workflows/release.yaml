@@ -101,15 +101,17 @@ jobs:
   helm:
     name: Package and Publish Helm Chart
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Set up Helm
-      uses: azure/setup-helm@v3
       with:
-        version: 'v3.13.0'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Configure Git
+      run: |
+        git config user.name "$GITHUB_ACTOR"
+        git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
     
     - name: Extract version
       id: version
@@ -120,14 +122,10 @@ jobs:
         sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" charts/helm-repo-exporter/Chart.yaml
         sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.VERSION }}\"/" charts/helm-repo-exporter/Chart.yaml
     
-    - name: Package chart
-      run: |
-        helm package charts/helm-repo-exporter -d .deploy
-    
-    - name: Upload chart to release
-      uses: softprops/action-gh-release@v1
+    - name: Run chart-releaser
+      uses: helm/chart-releaser-action@v1.6.0
       with:
-        files: .deploy/*.tgz
+        charts_dir: charts
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
