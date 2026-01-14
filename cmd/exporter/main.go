@@ -81,7 +81,7 @@ func main() {
 	mux.Handle(cfg.MetricsPath, promhttp.Handler())
 
 	// Add health check endpoint
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte("OK")); err != nil {
 			log.Printf("Error writing health response: %v", err)
@@ -89,7 +89,7 @@ func main() {
 	})
 
 	// Add readiness check endpoint
-	mux.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte("Ready")); err != nil {
 			log.Printf("Error writing readiness response: %v", err)

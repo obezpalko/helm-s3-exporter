@@ -196,7 +196,7 @@ func (h *HTMLGenerator) mergeAllRepos() *analyzer.ChartAnalysis {
 }
 
 // ServeHTTP handles HTTP requests for the charts dashboard
-func (h *HTMLGenerator) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *HTMLGenerator) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	h.mu.RLock()
 	analysis := h.analysis
 	h.mu.RUnlock()
