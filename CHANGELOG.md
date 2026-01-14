@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-01-14
+
+### Fixed
+- Added `continue-on-error` to chart-releaser action to handle known bug with unbound `latest_tag` variable
+- Workflow now completes successfully despite harmless script error that occurs after index.yaml is updated
+
 ## [0.2.0] - 2025-01-14
 
 ### Changed
@@ -70,7 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration examples for various scenarios
 - Grafana dashboard and Prometheus queries
 
-[Unreleased]: https://github.com/obezpalko/helm-repo-exporter/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/obezpalko/helm-repo-exporter/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/obezpalko/helm-repo-exporter/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/obezpalko/helm-repo-exporter/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/obezpalko/helm-repo-exporter/releases/tag/v0.1.0
 
