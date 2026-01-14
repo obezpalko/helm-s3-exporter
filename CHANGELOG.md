@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-01-14
+
+### Changed
+- Updated GitHub Actions to latest versions for improved security and performance:
+  - `actions/checkout`: v4 → v6
+  - `actions/setup-go`: v5 → v6
+  - `actions/upload-artifact`: v4 → v6
+  - `actions/attest-build-provenance`: v1 → v3
+  - `docker/build-push-action`: v5 → v6
+  - `azure/setup-helm`: v3 → v4 (Helm 3.13.0 → 3.16.3)
+  - `softprops/action-gh-release`: v1 → v2
+  - `golangci/golangci-lint-action`: v3 → v6 (with v1.61)
+  - `codecov/codecov-action`: v3 → v5
+
+### Fixed
+- Fixed unused parameter warnings in HTTP handlers by renaming to underscore
+- Removed golangci-lint config version field for v1.x compatibility
+
+### Removed
+- Deleted unused GitHub Pages deployment workflow
+
 ## [0.1.0] - 2025-01-13
 
 ### Added
@@ -49,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration examples for various scenarios
 - Grafana dashboard and Prometheus queries
 
-[Unreleased]: https://github.com/obezpalko/helm-repo-exporter/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/obezpalko/helm-repo-exporter/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/obezpalko/helm-repo-exporter/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/obezpalko/helm-repo-exporter/releases/tag/v0.1.0
 
