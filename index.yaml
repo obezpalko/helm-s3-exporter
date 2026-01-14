@@ -2,6 +2,29 @@ apiVersion: v1
 entries:
   helm-repo-exporter:
   - apiVersion: v2
+    appVersion: 0.2.1
+    created: "2026-01-14T15:49:13.362279723Z"
+    description: A Prometheus exporter for Helm chart repositories (HTTP/HTTPS)
+    digest: f45f4cb3cb76bfd4d1686a6fbdcc8e26f41c36e2e7baec14aa6d9b11177eb299
+    home: https://github.com/obezpalko/helm-repo-exporter
+    icon: data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImdyYWQxIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzBGOUQ1ODtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMEI4MDQzO3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZDIiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6I0ZGOTkwMDtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojRkY3NzAwO3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgCiAgPCEtLSBCYWNrZ3JvdW5kIGNpcmNsZSAtLT4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSIxMDAiIHI9Ijk1IiBmaWxsPSJ1cmwoI2dyYWQxKSIgLz4KICAKICA8IS0tIFMzIEJ1Y2tldCByZXByZXNlbnRhdGlvbiAtLT4KICA8cGF0aCBkPSJNIDYwIDgwIEwgNjAgMTIwIEwgMTAwIDEzNSBMIDE0MCAxMjAgTCAxNDAgODAgTCAxMDAgNjUgWiIgZmlsbD0idXJsKCNncmFkMikiIG9wYWNpdHk9IjAuOSIvPgogIDxwYXRoIGQ9Ik0gNjAgODAgTCAxMDAgOTUgTCAxNDAgODAgTCAxMDAgNjUgWiIgZmlsbD0iI0ZGQjg0RCIvPgogIAogIDwhLS0gSGVsbSB3aGVlbCAtLT4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMDAsIDEwMCkgc2NhbGUoMC40KSI+CiAgICA8Y2lyY2xlIGN4PSIwIiBjeT0iMCIgcj0iMzUiIGZpbGw9IndoaXRlIiBvcGFjaXR5PSIwLjk1Ii8+CiAgICA8cGF0aCBkPSJNIDAsLTM1IEwgOCwtMTAgTCAwLC0xNSBMIC04LC0xMCBaIiBmaWxsPSIjMEYxNjg5Ii8+CiAgICA8cGF0aCBkPSJNIDMwLjMxLC0xNy41IEwgMyw1IEwgNywzIEwgNSwtMyBaIiBmaWxsPSIjMEYxNjg5Ii8+CiAgICA8cGF0aCBkPSJNIDMwLjMxLDE3LjUgTCAzLC01IEwgNSwzIEwgNywtMyBaIiBmaWxsPSIjMEYxNjg5Ii8+CiAgICA8cGF0aCBkPSJNIDAsMzUgTCA4LDEwIEwgMCwxNSBMIC04LDEwIFoiIGZpbGw9IiMwRjE2ODkiLz4KICAgIDxwYXRoIGQ9Ik0gLTMwLjMxLDE3LjUgTCAtMywtNSBMIC03LDMgTCAtNSwtMyBaIiBmaWxsPSIjMEYxNjg5Ii8+CiAgICA8cGF0aCBkPSJNIC0zMC4zMSwtMTcuNSBMIC0zLDUgTCAtNSwzIEwgLTcsLTMgWiIgZmlsbD0iIzBGMTY4OSIvPgogICAgPGNpcmNsZSBjeD0iMCIgY3k9IjAiIHI9IjgiIGZpbGw9IiMwRjE2ODkiLz4KICA8L2c+CiAgCiAgPCEtLSBNZXRyaWNzL0NoYXJ0IGluZGljYXRvciAtLT4KICA8ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNDUsIDU1KSI+CiAgICA8cmVjdCB4PSIwIiB5PSIxMCIgd2lkdGg9IjYiIGhlaWdodD0iMTUiIGZpbGw9IndoaXRlIiByeD0iMSIvPgogICAgPHJlY3QgeD0iOCIgeT0iNSIgd2lkdGg9IjYiIGhlaWdodD0iMjAiIGZpbGw9IndoaXRlIiByeD0iMSIvPgogICAgPHJlY3QgeD0iMTYiIHk9IjAiIHdpZHRoPSI2IiBoZWlnaHQ9IjI1IiBmaWxsPSJ3aGl0ZSIgcng9IjEiLz4KICA8L2c+Cjwvc3ZnPgoK
+    keywords:
+    - prometheus
+    - exporter
+    - helm
+    - monitoring
+    - charts
+    maintainers:
+    - name: obezpalko
+      url: https://github.com/obezpalko
+    name: helm-repo-exporter
+    sources:
+    - https://github.com/obezpalko/helm-repo-exporter
+    type: application
+    urls:
+    - https://github.com/obezpalko/helm-repo-exporter/releases/download/helm-repo-exporter-0.2.1/helm-repo-exporter-0.2.1.tgz
+    version: 0.2.1
+  - apiVersion: v2
     appVersion: 0.2.0
     created: "2026-01-14T15:40:03.948490167Z"
     description: A Prometheus exporter for Helm chart repositories (HTTP/HTTPS)
@@ -47,4 +70,4 @@ entries:
     urls:
     - https://github.com/obezpalko/helm-repo-exporter/releases/download/helm-repo-exporter-0.1.0/helm-repo-exporter-0.1.0.tgz
     version: 0.1.0
-generated: "2026-01-14T15:40:03.948499313Z"
+generated: "2026-01-14T15:49:13.362295833Z"
