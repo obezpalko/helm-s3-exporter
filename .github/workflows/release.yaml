@@ -156,6 +156,19 @@ jobs:
       with:
         subject-path: '.cr-release-packages/*.tgz'
     
+    - name: Create Helm chart release
+      run: |
+        CHART_VERSION="${{ steps.version.outputs.VERSION }}"
+        CHART_FILE=".cr-release-packages/helm-repo-exporter-${CHART_VERSION}.tgz"
+        
+        # Create a release for the Helm chart
+        gh release create "helm-repo-exporter-${CHART_VERSION}" \
+          "${CHART_FILE}" \
+          --title "helm-repo-exporter-${CHART_VERSION}" \
+          --notes "Helm chart release for version ${CHART_VERSION}"
+      env:
+        GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    
     - name: Run chart-releaser
       uses: helm/chart-releaser-action@v1.7.0
       continue-on-error: true  # Known issue: script has unbound variable at end, but index.yaml is updated successfully
